@@ -1,0 +1,58 @@
+{
+  "name": "music-theory",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "src/main.js",
+  "homepage": "./",
+  "scripts": {
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "electron": "electron .",
+    "electron:start": "node src/start",
+    "react:start": "BROWSER=none react-scripts start",
+    "pack": "build --dir",
+    "dist": "npm run build && build",
+    "lint": "eslint src/*",
+    "lint:fix": "eslint src/* --fix",
+    "lint:quiet": "eslint src/* --quiet"
+  },
+  "repository": "https://github.com/electron/electron-quick-start",
+  "keywords": [
+    "Electron"
+  ],
+  "author": "David Szakallas",
+  "license": "MIT",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.34.0",
+    "@typescript-eslint/parser": "^5.34.0",
+    "electron": "^20.0.3",
+    "electron-builder": "^23.3.3",
+    "electron-reload": "^2.0.0-alpha.1",
+    "eslint": "^8.22.0",
+    "eslint-plugin-react": "^7.30.1"
+  },
+  "dependencies": {
+    "@types/jest": "^28.1.7",
+    "@types/node": "^18.7.11",
+    "@types/react": "^18.0.17",
+    "@types/react-dom": "^18.0.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "^5.0.1",
+    "typescript": "^4.7.4"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
