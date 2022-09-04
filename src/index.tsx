@@ -4,6 +4,7 @@ import React from 'react';
 import {array, range, map} from './iter';
 
 import { createMaster, createAttackReleaseOscillator, createPoly } from './audio';
+import { primeToneToFreqScale, eqTemperedToneToFreqScale, diffInCents, numSemitones, standardC, pitchToFreqFromScale } from './tuning';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -18,10 +19,10 @@ const volumeInput = (event) => {
   master.gain.value = volume;
 };
 
-const attackDt = 40;
+const attackDt = 0.06;
 const peakVol = 1;
-const releaseDt = 600;
-const oscillatorVoices = 4;
+const releaseDt = 0.6;
+const oscillatorVoices = 1;
 
 const poly = createPoly(oscillatorVoices, createAttackReleaseOscillator, {attackDt, releaseDt, peakVol}, audioContext);
 
@@ -41,66 +42,49 @@ const volumeToSliderValue = v => {
 
 master.gain.value = initialVol;
 
-const base = 220;
+const baseTone = standardC;
 
-const numSemitones = 12;
+const tetTable = eqTemperedToneToFreqScale(baseTone);
 
-const cents = (f, b) => 1200 * Math.log2(f / b);
-const tetNote = (i, base) => base * 2 ** (i/numSemitones);
-
-const tetTable = array(map(i => tetNote(i, base), range(numSemitones)));
-const tetCents = tetTable.map(e => cents(e, base));
-
-const pythagoreanQuotients = [
-  [0, 0],
-  [8, -5],
-  [-3, 2],
-  [5, -3],
-  [-6, 4],
-  [2, -1],
-  [10, -6], // using diminished fifth, could be [-9, 6] as augmented fourth
-  [-1, 1],
-  [7, -4],
-  [-4, 3],
-  [4, -2],
-  [-7, 5]
-];
-
-const pythagoreanNote = (i, base) => {
-  const [e2, e3] = pythagoreanQuotients[i];
-  return base * (2 ** e2) * (3 ** e3);
-};
+const tetCents = tetTable.map(e => diffInCents(e, baseTone));
 
 type Tuning = {name: string, description: string, tones: Array<number>};
 
-const pythagoreanTable = array(map(i => pythagoreanNote(i, base), range(numSemitones)));
-
 const tunings: Array<Tuning> = [
   {name: '12-TET', description: '', tones: tetTable},
-  {name: 'Pythagorean', description: '', tones: pythagoreanTable},
-  {name: 'Limit-5', description: '', tones: tetTable}
+  {name: 'Pythagorean', description: '', tones: primeToneToFreqScale(baseTone, 'pythagorean') },
+  {name: '5-limit symmetric No.1', description: '', tones: primeToneToFreqScale(baseTone, '5ls1')},
+  {name: '5-limit symmetric No.2', description: '', tones: primeToneToFreqScale(baseTone, '5ls2')},
+  {name: '5-limit asymmetric', description: '', tones: primeToneToFreqScale(baseTone, '5la')},
+  {name: '7-limit', description: '', tones: primeToneToFreqScale(baseTone, '7l')}
 ];
 
-class TuningDoc extends React.Component {
-  props: { tunings: Array<Tuning> };
+class InstrumentDoc extends React.Component {
   state: { tuning: number };
+  props: Record<string, never>;
+
   constructor(props) {
     super(props);
-    const initialTuning = 0;
-    this.state = {tuning: initialTuning};
+    this.state = {tuning: 0};
   }
 
   changeTuning(e) {
     this.setState({tuning: parseInt(e.currentTarget.value)});
   }
 
+  pitchToFreq(pitch) {
+    return pitchToFreqFromScale(pitch, tunings[this.state.tuning].tones);
+  }
+
   render() {
-    const tunings = this.props.tunings;
     const i = this.state.tuning;
-    return <div id="tunings">
+    const startOctave = 5;
+    const startPitch = startOctave * numSemitones;
+    return <div>
+      <PlayerDoc tuning={i}></PlayerDoc>
       {tunings.map((e, j) => (
         <React.Fragment key={j}>
-          <input type="radio" name="tuning" value={j} checked={i==j} onChange={this.changeTuning.bind(this)} ></input> {e.name}
+          <input type="radio" name="tuning" value={j} checked={i==j} onChange={this.changeTuning.bind(this)}></input> {e.name}
         </React.Fragment>
       ))}
       <table>
@@ -114,13 +98,37 @@ class TuningDoc extends React.Component {
         <tbody>
           {array(map(j => (
             <tr key={j}>
-              <td><button key={j} id={`note-${j}`} role="switch" aria-checked="false" onClick={() => poly.attack(tunings[i].tones[j])}>Note {j}</button></td>
-              <td>{tunings[i].tones[j].toFixed(2)}</td>
-              <td>{(cents(tunings[i].tones[j], base) - tetCents[j]).toFixed(2)}</td>
+              <td><button key={j} id={`note-${j}`} role="switch" aria-checked="false" onClick={() => poly.attack(
+                {pitch: j + startPitch, velocity: 127},
+                undefined,
+                this.pitchToFreq.bind(this)
+              )}>Note {j}</button></td>
+              <td>{this.pitchToFreq(j + startPitch).toFixed(2)}</td>
+              <td>{(diffInCents(tunings[i].tones[j], baseTone) - tetCents[j]).toFixed(2)}</td>
             </tr>
           ), range(numSemitones)))}
         </tbody>
       </table>
+    </div>;
+  }
+}
+
+
+class PlayerDoc extends React.Component {
+  props: { tuning: number };
+  state: { playing: boolean };
+  constructor(props) {
+    super(props);
+    this.state = {playing: false};
+  }
+
+  play(e) {
+    this.setState((state: {playing:boolean}, props) => ({playing: !state.playing}));
+  }
+
+  render() {
+    return <div>
+      <button onClick={this.play.bind(this)} aria-pressed={this.state.playing}>Play</button>
     </div>;
   }
 }
@@ -132,7 +140,7 @@ const bodyDoc =
         Volume
         <input type="range" min="0" max="1" step="0.001" defaultValue={volumeToSliderValue(initialVol)} className="slider" id="volume" onInput={volumeInput}></input>
       </div>
-      <TuningDoc tunings={tunings}></TuningDoc>
+      <InstrumentDoc></InstrumentDoc>
     </div>;
 
 root.render(bodyDoc);

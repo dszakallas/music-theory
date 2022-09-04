@@ -17,4 +17,24 @@ export const enumerate = (it) => {
   return map(v => [i++, v], it);
 };
 
+export const zip = function*(its) {
+  const l = its.length;
+  const _its = new Array(l);
+  for (let i = 0; i < l; ++i) {
+    _its[i] = iter(its[i]);
+  }
+  do {
+    const res = new Array(l);
+    for (let i = 0; i < l; ++i) {
+      const {done, value} = _its[i].next();
+      if (done)
+        return;
+      res[i] = value;
+    }
+    yield res;
+  } while (true);
+};
+
 export const array = it => [...it];
+
+export const iter = col => col[Symbol.iterator]();
