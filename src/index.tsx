@@ -61,7 +61,6 @@ const tunings: Array<Tuning> = [
   {name: '7-limit', description: '', tones: primeToneToFreqScale(baseTone, '7l')}
 ];
 
-
 const midiC = 48;
 
 const [E, F, Fs, G, Gs, A, Bb, B, c, cs, d, ds,
