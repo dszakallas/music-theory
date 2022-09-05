@@ -136,7 +136,7 @@ export type Sequencer = {
 
 // based on the design by Chris Wilson to provide high precision audio scheduling https://github.com/cwilso/metronome
 export const createSequencer = (instrument, bpm: number, track: Track, ctx: AudioContext) => {
-  const lookAhead = 25.0; // how frequently to call scheduler (,s)
+  const lookAhead = 25.0; // how frequently to call scheduler (ms)
   const scheduleAhead = 100.0 / 1000; // how far to schedule ahead (s)
 
   const clock = new Clock(lookAhead);
