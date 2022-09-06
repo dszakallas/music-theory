@@ -26,6 +26,10 @@ export const toneNames = [
   'Major seventh'
 ];
 
+export const pitchNames = [
+  'C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'
+];
+
 const primes = [2, 3, 5, 7, 11, 13, 17];
 
 const primeTone = (tones) => (i) => {
@@ -51,11 +55,14 @@ export const scales = Object.fromEntries([
 ]);
 
 export const standardC = eqTemperedTone(3) * 110;
+export const standardPitch = 48; // MIDI number of standardC
 
-export const pitchToFreq = (scale, referenceFrequency = standardC, referencePitch = 48) => (pitch) => {
+const posMod = (n, m) => (n % m + m) % m;
+
+export const pitchToFreq = (scale, referenceFrequency = standardC, referencePitch = standardPitch) => (pitch) => {
   const p = pitch - referencePitch;
   const power = Math.floor(p / numSemitones);
-  const tone = scale[p % numSemitones];
+  const tone = scale[posMod(p, numSemitones)];
   return referenceFrequency * tone * (2 ** power);
 };
 
