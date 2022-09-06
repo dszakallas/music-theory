@@ -37,4 +37,12 @@ export const zip = function*(its) {
 
 export const array = it => [...it];
 
+export const dict = it => {
+  const res = new Map();
+  for (const [k, v] of it) {
+    res[k] = v;
+  }
+  return res;
+};
+
 export const iter = col => col[Symbol.iterator]();

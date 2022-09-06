@@ -1,4 +1,4 @@
-import {array, range, map, zip} from './iter';
+import {array, range, map, iter, zip} from './iter';
 
 export const numSemitones = 12;
 
@@ -11,10 +11,25 @@ const primeComponents = {
   '7l': [[], [-1, 1, 1, -1], [3, 0, 0, -1], [1, 1, -1], [-2, 0, 1], [2, -1], [1, 0, 1, -1], [-1, 1], [3, 0, -1], [0, -1, 1], [-2, 0, 0, 1], [-3, 1, 1]]
 };
 
+export const toneNames = [
+  'Unison',
+  'Minor second',
+  'Major second',
+  'Minor third',
+  'Major third',
+  'Perfect fourth',
+  'Tritone',
+  'Perfect fifth',
+  'Minor sixth',
+  'Major sixth',
+  'Minor seventh',
+  'Major seventh'
+];
+
 const primes = [2, 3, 5, 7, 11, 13, 17];
 
-const primeToneToFreq = (tones, i, base) => {
-  let tone = base;
+const primeTone = (tones) => (i) => {
+  let tone = 1;
   const primePowers = zip([primes, tones[i]]);
   for (const [prime, power] of primePowers) {
     tone = tone * (prime ** power);
@@ -22,21 +37,25 @@ const primeToneToFreq = (tones, i, base) => {
   return tone;
 };
 
-export const primeToneToFreqScale = (base, primeScale) => array(map(i => primeToneToFreq(primeComponents[primeScale], i, base), range(numSemitones)));
-
-export const eqTemperedToneToFreq = (i, base) => base * 2 ** (i/numSemitones);
-
-export const eqTemperedToneToFreqScale = (base) => array(map(i => eqTemperedToneToFreq(i, base), range(numSemitones)));
+export const eqTemperedTone = (i) => 2 ** (i/numSemitones);
 
 export const diffInCents = (f, b) => 1200 * Math.log2(f / b);
 
 export type MidiPitch = number;
 
-export const pitchToFreqFromScale = (pitch: MidiPitch, scale: Array<number>, startPitch = 48) => {
-  const freqPower = Math.floor((pitch - startPitch) / numSemitones);
-  const freqBase = scale[(pitch - startPitch) % numSemitones];
-  const freq = freqBase * (2 ** freqPower);
-  return freq;
+const scale = (getTone) => array(map(getTone, range(numSemitones)));
+
+export const scales = Object.fromEntries([
+  ['12tet', scale(eqTemperedTone)],
+  ...map(([k, v]) => [k, scale(primeTone(v))], iter(Object.entries(primeComponents)))
+]);
+
+export const standardC = eqTemperedTone(3) * 110;
+
+export const pitchToFreq = (scale, referenceFrequency = standardC, referencePitch = 48) => (pitch) => {
+  const p = pitch - referencePitch;
+  const power = Math.floor(p / numSemitones);
+  const tone = scale[p % numSemitones];
+  return referenceFrequency * tone * (2 ** power);
 };
 
-export const standardC = eqTemperedToneToFreq(3, 110);

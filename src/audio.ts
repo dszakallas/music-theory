@@ -1,6 +1,6 @@
 import { range, array, map } from './iter';
 import { Clock } from './clock';
-import { pitchToFreqFromScale, eqTemperedToneToFreqScale, standardC } from './tuning';
+import { scales, pitchToFreq } from './tuning';
 
 export const createMaster = (ctx: AudioContext) => {
   const compr = ctx.createDynamicsCompressor();
@@ -45,7 +45,7 @@ export type AttackReleaseCurve = {
 
 const timeToSteal = 0.01;
 
-const defaultPitchToFreq = (pitch) => pitchToFreqFromScale(pitch, eqTemperedToneToFreqScale(standardC));
+const defaultPitchToFreq = pitchToFreq(scales['12tet']);
 
 export const createAttackReleaseOscillator = (arc: AttackReleaseCurve, ctx: AudioContext) => {
   const {attackDt, releaseDt, peakVol} = arc;

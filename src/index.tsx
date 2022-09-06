@@ -4,7 +4,7 @@ import React from 'react';
 import {array, range, map} from './iter';
 
 import { createMaster, createAttackReleaseOscillator, createPoly, createSequencer } from './audio';
-import { primeToneToFreqScale, eqTemperedToneToFreqScale, diffInCents, numSemitones, standardC, pitchToFreqFromScale } from './tuning';
+import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, eqTemperedTone } from './tuning';
 
 import type { Sequencer, Track } from './audio';
 
@@ -44,21 +44,20 @@ const volumeToSliderValue = v => {
 
 master.gain.value = initialVol;
 
-const baseTone = standardC;
-
-const tetTable = eqTemperedToneToFreqScale(baseTone);
-
-const tetCents = tetTable.map(e => diffInCents(e, baseTone));
-
 type Tuning = {name: string, description: string, tones: Array<number>};
 
 const tunings: Array<Tuning> = [
-  {name: '12-TET', description: '', tones: tetTable},
-  {name: 'Pythagorean', description: '', tones: primeToneToFreqScale(baseTone, 'pythagorean') },
-  {name: '5-limit symmetric No.1', description: '', tones: primeToneToFreqScale(baseTone, '5ls1')},
-  {name: '5-limit symmetric No.2', description: '', tones: primeToneToFreqScale(baseTone, '5ls2')},
-  {name: '5-limit asymmetric', description: '', tones: primeToneToFreqScale(baseTone, '5la')},
-  {name: '7-limit', description: '', tones: primeToneToFreqScale(baseTone, '7l')}
+  {name: '12-TET', description: '', tones: scales['12tet'] },
+  {name: 'Pythagorean', description: '', tones: scales['pythagorean'] },
+  {name: '5-limit symmetric No.1', description: '', tones: scales['5ls1']},
+  {name: '5-limit symmetric No.2', description: '', tones: scales['5ls2']},
+  {name: '5-limit asymmetric', description: '', tones: scales['5la']},
+  {name: '7-limit', description: '', tones: scales['7l']}
+];
+
+const refFreqs = [
+  {name: '440 Hz (concert pitch)', freq: eqTemperedTone(3) * (440 / 4)},
+  {name: '432 Hz', freq: eqTemperedTone(3) * (432 / 4)}
 ];
 
 const midiC = 48;
@@ -99,29 +98,29 @@ const greenSleeves: Track = {
   ]
 };
 
-const pitchToFreq = (i) => (pitch) => pitchToFreqFromScale(pitch, tunings[i].tones);
-
 class InstrumentDoc extends React.Component {
-  state: { tuning: number, playing: boolean };
+  state: { tuning: number, refFreq: number, playing: boolean };
   props: Record<string, never>;
   sequencer: Sequencer;
 
   constructor(props) {
     super(props);
-    this.state = {tuning: 0, playing: false};
+    this.state = {tuning: 0, refFreq: 0, playing: false};
     this.sequencer = createSequencer(poly, 120, greenSleeves, audioContext);
   }
 
   changeTuning(e) {
     const tuning = parseInt(e.currentTarget.value);
-    this.setState(() => {
-      this.sequencer.setPitchToFreq(pitchToFreq(tuning));
-      return {tuning};
-    });
+    this.setState({tuning});
   }
 
-  play(e) {
-    this.setState((state: {playing: boolean}, props) => {
+  changeRefFreq(e) {
+    const refFreq = parseInt(e.currentTarget.value);
+    this.setState({refFreq});
+  }
+
+  play() {
+    this.setState((state: {playing: boolean}) => {
       if (state.playing)
         this.sequencer.stop();
       else
@@ -131,18 +130,34 @@ class InstrumentDoc extends React.Component {
   }
 
   render() {
-    const i = this.state.tuning;
+    const [tuning, refFreq] = [this.state.tuning, this.state.refFreq];
+    const tones = pitchToFreq(tunings[tuning].tones, refFreqs[refFreq].freq);
+
+    this.sequencer.setPitchToFreq(tones);
+
+    const etTones = pitchToFreq(tunings[0].tones, refFreqs[refFreq].freq);
     const startOctave = 5;
     const startPitch = startOctave * numSemitones;
     return <div>
       <div>
         <button onClick={this.play.bind(this)} aria-pressed={this.state.playing}>Play</button>
       </div>
-      {tunings.map((e, j) => (
-        <React.Fragment key={j}>
-          <input type="radio" name="tuning" value={j} checked={i==j} onChange={this.changeTuning.bind(this)}></input> {e.name}
-        </React.Fragment>
-      ))}
+      <div>
+        Reference frequency for A:
+        {refFreqs.map((e, j) => (
+          <React.Fragment key={j}>
+            <input type="radio" name="ref-freq" value={j} checked={refFreq==j} onChange={this.changeRefFreq.bind(this)}></input> {e.name}
+          </React.Fragment>
+        ))}
+      </div>
+      <div>
+        Tuning system:
+        {tunings.map((e, j) => (
+          <React.Fragment key={j}>
+            <input type="radio" name="tuning" value={j} checked={tuning==j} onChange={this.changeTuning.bind(this)}></input> {e.name}
+          </React.Fragment>
+        ))}
+      </div>
       <table>
         <thead>
           <tr>
@@ -157,10 +172,10 @@ class InstrumentDoc extends React.Component {
               <td><button key={j} id={`note-${j}`} role="switch" aria-checked="false" onClick={() => poly.attack(
                 {pitch: j + startPitch, velocity: 127},
                 undefined,
-                pitchToFreq(i)
-              )}>Note {j}</button></td>
-              <td>{pitchToFreq(i)(j + startPitch).toFixed(2)}</td>
-              <td>{(diffInCents(tunings[i].tones[j], baseTone) - tetCents[j]).toFixed(2)}</td>
+                tones
+              )}>{toneNames[j]}</button></td>
+              <td>{tones(j + startPitch).toFixed(2)}</td>
+              <td>{diffInCents(tones(j + startPitch), etTones(j+startPitch)).toFixed(2)}</td>
             </tr>
           ), range(numSemitones)))}
         </tbody>
