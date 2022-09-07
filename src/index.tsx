@@ -4,7 +4,7 @@ import React from 'react';
 import {array, range, map} from './iter';
 
 import { createMaster, createAttackReleaseOscillator, createPoly, createSequencer } from './audio';
-import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, eqTemperedTone, standardPitch } from './tuning';
+import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, eqTemperedTone, concertPitchFreq, A4 } from './tuning';
 
 import type { Sequencer, Track } from './audio';
 
@@ -56,15 +56,13 @@ const tunings: Array<Tuning> = [
 ];
 
 const refFreqs = [
-  {name: '440 Hz (concert pitch)', freq: eqTemperedTone(3) * (440 / 4)},
-  {name: '432 Hz', freq: eqTemperedTone(3) * (432 / 4)}
+  {name: '440 Hz (concert pitch)', freq: concertPitchFreq},
+  {name: '432 Hz', freq: 432}
 ];
-
-const midiC = 48;
 
 const [E, F, Fs, G, Gs, A, Bb, B, c, cs, d, ds,
   e, f, fs, g, gs, a, bb, b, c1, c1s, d1, d1s,
-  e1, f1, f1s, g1] = array(map(i => ({ pitch: midiC + 4 + i, velocity: 127 }), range(28)));
+  e1, f1, f1s, g1] = array(map(i => ({ pitch: A4 - 17 + i, velocity: 127 }), range(28)));
 
 
 const greenSleeves: Track = {
@@ -136,8 +134,10 @@ class InstrumentDoc extends React.Component {
 
   render() {
     const {tuning, refFreq, baseTone} = this.state;
-    const baseFreq = refFreqs[refFreq].freq * eqTemperedTone(baseTone);
-    const basePitch = standardPitch + baseTone;
+    // base tone relative to A
+    const baseToneFromA = baseTone - 9;
+    const baseFreq = refFreqs[refFreq].freq * eqTemperedTone(baseToneFromA);
+    const basePitch = A4 + baseToneFromA;
     const tones = pitchToFreq(tunings[tuning].tones, baseFreq, basePitch);
 
     this.sequencer.setPitchToFreq(tones);

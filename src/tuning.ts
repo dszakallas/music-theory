@@ -1,4 +1,5 @@
 import {array, range, map, iter, zip} from './iter';
+import {posMod} from './util';
 
 export const numSemitones = 12;
 
@@ -54,15 +55,14 @@ export const scales = Object.fromEntries([
   ...map(([k, v]) => [k, scale(primeTone(v))], iter(Object.entries(primeComponents)))
 ]);
 
-export const standardC = eqTemperedTone(3) * 110;
-export const standardPitch = 48; // MIDI number of standardC
+// A 440 Hz - midi note number 69
+export const concertPitchFreq = 440;
+export const A4 = 69; // MIDI number
 
-const posMod = (n, m) => (n % m + m) % m;
-
-export const pitchToFreq = (scale, referenceFrequency = standardC, referencePitch = standardPitch) => (pitch) => {
+export const pitchToFreq = (scale, referenceFreq = concertPitchFreq, referencePitch = A4) => (pitch) => {
   const p = pitch - referencePitch;
   const power = Math.floor(p / numSemitones);
   const tone = scale[posMod(p, numSemitones)];
-  return referenceFrequency * tone * (2 ** power);
+  return referenceFreq * tone * (2 ** power);
 };
 
