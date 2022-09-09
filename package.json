@@ -31,7 +31,7 @@
     "electron-builder": "^23.3.3",
     "electron-reload": "^2.0.0-alpha.1",
     "eslint": "^8.22.0",
-    "eslint-plugin-react": "^7.30.1"
+    "eslint-plugin-react": "^7.31.8"
   },
   "dependencies": {
     "@types/jest": "^28.1.7",
