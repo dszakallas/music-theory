@@ -35,6 +35,8 @@
   "dependencies": {
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
+    "@fontsource/roboto": "^4.5.8",
+    "@mui/icons-material": "^5.10.3",
     "@mui/material": "^5.10.5",
     "@types/jest": "^28.1.7",
     "@types/node": "^18.7.11",

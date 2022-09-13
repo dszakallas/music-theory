@@ -1,5 +1,24 @@
+import '@fontsource/roboto/300.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
+
 import ReactDOM from 'react-dom/client';
-import React from 'react';
+import React, {useEffect} from 'react';
+import Button from '@mui/material/Button';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Slider from '@mui/material/Slider';
+import { VolumeUp, VolumeDown } from '@mui/icons-material';
+
 
 import {array, range, map} from './iter';
 
@@ -7,6 +26,7 @@ import { createMaster, createAttackReleaseOscillator, createPoly, createSequence
 import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, eqTemperedTone, concertPitchFreq, A4 } from './tuning';
 
 import type { Sequencer, Track } from './audio';
+import { handleChange, useState } from './util';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -16,8 +36,8 @@ const master = createMaster(audioContext);
 
 master.output.connect(audioContext.destination);
 
-const volumeInput = (event) => {
-  const volume = sliderValueToVolume(event.currentTarget.value);
+const volumeInput = (event, newValue: number) => {
+  const volume = sliderValueToVolume(newValue);
   master.gain.value = volume;
 };
 
@@ -96,119 +116,131 @@ const greenSleeves: Track = {
   ]
 };
 
-class InstrumentDoc extends React.Component {
-  state: { tuning: number, refFreq: number, baseTone: number, playing: boolean };
-  props: Record<string, never>;
-  sequencer: Sequencer;
-
-  constructor(props) {
-    super(props);
-    this.state = {tuning: 0, refFreq: 0, baseTone: 0, playing: false};
-    this.sequencer = createSequencer(poly, 120, greenSleeves, audioContext);
-  }
-
-  changeTuning(e) {
-    const tuning = parseInt(e.currentTarget.value);
-    this.setState({tuning});
-  }
-
-  changeRefFreq(e) {
-    const refFreq = parseInt(e.currentTarget.value);
-    this.setState({refFreq});
-  }
-
-  changeBaseTone(e) {
-    const baseTone = parseInt(e.currentTarget.value);
-    this.setState({baseTone});
-  }
-
-  play() {
-    this.setState((state: {playing: boolean}) => {
-      if (state.playing)
-        this.sequencer.stop();
-      else
-        this.sequencer.start();
-      return {playing: !state.playing};
-    });
-  }
-
-  render() {
-    const {tuning, refFreq, baseTone} = this.state;
-    // base tone relative to A
-    const baseToneFromA = baseTone - 9;
-    const baseFreq = refFreqs[refFreq].freq * eqTemperedTone(baseToneFromA);
-    const basePitch = A4 + baseToneFromA;
-    const tones = pitchToFreq(tunings[tuning].tones, baseFreq, basePitch);
-
-    this.sequencer.setPitchToFreq(tones);
-
-    const etTones = pitchToFreq(tunings[0].tones, baseFreq, basePitch);
-    const startOctave = 5;
-    const startPitch = startOctave * numSemitones + baseTone;
-    return <div>
-      <div>
-        <button onClick={this.play.bind(this)} aria-pressed={this.state.playing}>Play</button>
-      </div>
-      <div>
-        Tonic root:
+const TuningSystemDoc = (props: { baseTone, tuning, refFreq }) => {
+  const { baseTone, tuning, refFreq } = props;
+  return <div>
+    <div>
+      Tonic root:
+      <ToggleButtonGroup
+        value={baseTone.value}
+        exclusive
+        onChange={handleChange(baseTone.set)}
+        aria-label="baseTone"
+      >
         {pitchNames.map((e, j) => (
-          <React.Fragment key={j}>
-            <input type="radio" name="base-tone" value={j} checked={baseTone==j} onChange={this.changeBaseTone.bind(this)}></input> {e}
-          </React.Fragment>
+          <ToggleButton key={j} value={j}>{e}</ToggleButton>
         ))}
-      </div>
-      <div>
-        Reference frequency for A:
+      </ToggleButtonGroup>
+    </div>
+    <div>
+      Reference frequency for A:
+      <ToggleButtonGroup
+        value={refFreq.value}
+        exclusive
+        onChange={handleChange(refFreq.set)}
+        aria-label="reference frequency"
+      >
         {refFreqs.map((e, j) => (
-          <React.Fragment key={j}>
-            <input type="radio" name="ref-freq" value={j} checked={refFreq==j} onChange={this.changeRefFreq.bind(this)}></input> {e.name}
-          </React.Fragment>
+          <ToggleButton key={j} value={j}>{e.name}</ToggleButton>
         ))}
-      </div>
-      <div>
-        Tuning system:
+      </ToggleButtonGroup>
+    </div>
+    <div>
+      Tuning system:
+
+      <ToggleButtonGroup
+        value={tuning.value}
+        exclusive
+        onChange={handleChange(tuning.set)}
+        aria-label="baseTone"
+      >
         {tunings.map((e, j) => (
-          <React.Fragment key={j}>
-            <input type="radio" name="tuning" value={j} checked={tuning==j} onChange={this.changeTuning.bind(this)}></input> {e.name}
-          </React.Fragment>
+          <ToggleButton key={j} value={j}>{e.name}</ToggleButton>
         ))}
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th>Pitch</th>
-            <th>Frequency (Hz)</th>
-            <th>Cents from 12-TET</th>
-          </tr>
-        </thead>
-        <tbody>
-          {array(map(j => (
-            <tr key={j}>
-              <td><button key={j} id={`note-${j}`} role="switch" aria-checked="false" onClick={() => poly.attack(
-                {pitch: j + startPitch, velocity: 127},
-                undefined,
-                tones
-              )}>{toneNames[j]}</button></td>
-              <td>{pitchNames[(j + baseTone) % 12]}</td>
-              <td>{tones(j + startPitch).toFixed(2)}</td>
-              <td>{diffInCents(tones(j + startPitch), etTones(j + startPitch)).toFixed(2)}</td>
-            </tr>
-          ), range(numSemitones)))}
-        </tbody>
-      </table>
-    </div>;
-  }
-}
+      </ToggleButtonGroup>
+    </div>
+  </div>;
+};
 
-const bodyDoc =
-    <div id="body">
-      <h1>Music Theory</h1>
-      <div>
-        Volume
-        <input type="range" min="0" max="1" step="0.001" defaultValue={volumeToSliderValue(initialVol)} className="slider" id="volume" onInput={volumeInput}></input>
-      </div>
-      <InstrumentDoc></InstrumentDoc>
-    </div>;
+const ToneTableDoc = (props: { baseTone, tuning, refFreq }) => {
+  const { baseTone, tuning, refFreq } = props;
+  const baseToneFromA = baseTone.value - 9;
+  const baseFreq = refFreqs[refFreq.value].freq * eqTemperedTone(baseToneFromA);
+  const basePitch = A4 + baseToneFromA;
+  const tones = pitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
+  const etTones = pitchToFreq(tunings[0].tones, baseFreq, basePitch);
+  const startOctave = 5;
+  const startPitch = startOctave * numSemitones + baseTone.value;
 
-root.render(bodyDoc);
+  return <TableContainer component={Paper}>
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell></TableCell>
+          <TableCell>Pitch</TableCell>
+          <TableCell>Frequency (Hz)</TableCell>
+          <TableCell>Cents from 12-TET</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {array(map(j => (
+          <TableRow key={j}>
+            <TableCell><Button key={j} id={`note-${j}`} role="switch" variant="contained" onClick={() => poly.attack(
+              {pitch: j + startPitch, velocity: 127},
+              undefined,
+              tones
+            )}>{toneNames[j]}</Button></TableCell>
+            <TableCell>{pitchNames[(j + baseTone.value) % 12]}</TableCell>
+            <TableCell>{tones(j + startPitch).toFixed(2)}</TableCell>
+            <TableCell>{diffInCents(tones(j + startPitch), etTones(j + startPitch)).toFixed(2)}</TableCell>
+          </TableRow>
+        ), range(numSemitones)))}
+      </TableBody>
+    </Table>
+  </TableContainer>;
+};
+
+const PlayerDoc = (props: { playing }) => {
+  const { playing } = props;
+
+  return <div>
+    <Stack spacing={2} direction="row" sx={{ mb: 1 }} alignItems="center">
+      <Button onClick={() => handleChange(playing.set)(null, !playing.value)} variant="contained">Play</Button>
+      <VolumeDown />
+      <Slider id="volume" aria-label="Volume" min={0} max={1} step={0.001} onChange={volumeInput} defaultValue={volumeToSliderValue(initialVol)} />
+      <VolumeUp />
+    </Stack>
+  </div>;
+};
+
+
+const sequencer = createSequencer(poly, 120, greenSleeves, audioContext);
+
+const BodyDoc = () => {
+  const tuning = useState(0);
+  const refFreq = useState(0);
+  const baseTone = useState(0);
+  const playing = useState(false);
+
+  useEffect(() => {
+    playing.value ? sequencer.start() : sequencer.stop();
+  }, [playing.value]);
+
+
+  useEffect(() => {
+    const baseToneFromA = baseTone.value - 9;
+    const baseFreq = refFreqs[refFreq.value].freq * eqTemperedTone(baseToneFromA);
+    const basePitch = A4 + baseToneFromA;
+    const tones = pitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
+    sequencer.setPitchToFreq(tones);
+  }, [baseTone, refFreq, tuning]);
+
+  return <div id="body">
+    <h1>Music Theory</h1>
+    <PlayerDoc playing={playing}></PlayerDoc>
+    <TuningSystemDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>
+    <ToneTableDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>
+  </div>;
+};
+
+root.render(<BodyDoc />);
