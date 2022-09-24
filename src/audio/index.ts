@@ -1,6 +1,7 @@
-import { range, array, map } from './iter';
-import { Clock } from './clock';
-import { scales, pitchToFreq } from './tuning';
+import { range, array, map } from '../iter';
+import { Clock } from '../clock';
+import { scales, pitchToFreq } from '../tuning';
+
 
 export const createMaster = (ctx: AudioContext) => {
   const compr = ctx.createDynamicsCompressor();
@@ -37,86 +38,43 @@ const sampleAttackRelease = (at, p, rt, s) => {
   return samples;
 };
 
-export type AttackReleaseCurve = {
-  attackDt: number,
-  peakVol: number,
-  releaseDt: number
-};
 
-const timeToSteal = 0.01;
-
-const defaultPitchToFreq = pitchToFreq(scales['12tet']);
-
-export const createAttackReleaseOscillator = (arc: AttackReleaseCurve, ctx: AudioContext) => {
-  const {attackDt, releaseDt, peakVol} = arc;
-  const osc = ctx.createOscillator();
-  const env = ctx.createGain();
-  env.gain.value = 0;
-  osc.connect(env);
-  osc.start();
-
-  return {
-    output: env,
-    attack: (
-      noteOn: NoteOn,
-      time: number = undefined,
-      pitchToFreq: (number) => number = defaultPitchToFreq
-    ) => {
-      let startT = time || ctx.currentTime;
-      const {pitch} = noteOn;
-      env.gain.cancelAndHoldAtTime(startT);
-      startT += timeToSteal;
-      env.gain.setTargetAtTime(0, startT, timeToSteal / 3);
-      const freq = pitchToFreq(pitch);
-      osc.frequency.setValueAtTime(freq, startT);
-      const attackT = startT + attackDt;
-      env.gain.setTargetAtTime(peakVol, startT, attackDt / 3);
-      env.gain.setTargetAtTime(0, attackT, releaseDt / 3);
-    }
-  };
-};
-
-export const createPoly = function(numVoices, osc, ...args) {
-  const voices = array(map(() => osc(...args), range(numVoices)));
-  let current = 0;
-
-  return {
-    outputs: voices.map(v => v.output),
-    attack: (
-      noteOn: NoteOn,
-      time: number = undefined,
-      pitchToFreq: (number) => number = defaultPitchToFreq
-    ) => {
-      voices[current].attack(noteOn, time, pitchToFreq);
-      current = (current + 1) % numVoices;
-    }
-  };
-};
-
-export type NoteOn = {
+export type MidiNote = {
   pitch: number,
   velocity: number
-}
+};
+
+export type Param = { value: any };
+
+export type Instrument = {
+  params: { [name: string]: Param },
+  outputs: Array<AudioNode>,
+  onMidi: (note: MidiNote, time: number) => void,
+  stop: (time: number) => void
+};
 
 export type Beat = number;
 
-export type Note = [Beat, NoteOn];
+export type Note = [Beat, MidiNote, number];
 
-export type Track = {
+export type SimpleTrack = {
   timeSignature: [number, number], // should be encoded so that time signature := timeSignature[0] / 2 ^ -1 * timeSignature[1], e.g 6/8 := [6, 3]
   offset: number // offset start/end by number of notes
   notes: Array<Array<Note>>
 }
 
-const noteIterator = function*(track: Track, repeat = true) {
+
+export type MidiTrack = Array<Array<[Beat, MidiNote]>>
+
+const noteIterator = function*(track: MidiTrack, repeat = true) {
   let [r, i, j] = [0, 0, 0];
   do {
     i = 0;
-    const numBars = track.notes.length;
+    const numBars = track.length;
     while(i < numBars) {
       j = 0;
-      while(j < track.notes[i].length) {
-        const [beat, pitch] = track.notes[i][j];
+      while(j < track[i].length) {
+        const [beat, pitch] = track[i][j];
         const ctrl = yield [r * numBars + i, beat, pitch];
         if (ctrl == 'peek') --j;
         ++j;
@@ -127,6 +85,29 @@ const noteIterator = function*(track: Track, repeat = true) {
   } while(repeat);
 };
 
+
+export const defaultPitchToFreq = pitchToFreq(scales['12tet']);
+
+export const ctrlParam = (followers, defaultValue) => {
+  let _value = defaultValue;
+  function updateFollowers() {
+    for (const follower of followers) {
+      follower.value = _value;
+    }
+  }
+
+  updateFollowers();
+  return {
+    get value() {
+      return _value;
+    },
+    set value(v) {
+      _value = v;
+      updateFollowers();
+    }
+  };
+};
+
 export type Sequencer = {
   start: () => void,
   stop: () => void,
@@ -134,8 +115,26 @@ export type Sequencer = {
   setPitchToFreq: any
 };
 
+
+const simpleTrackToMidiTrack = (track: SimpleTrack) => track.notes.map(bar => {
+  const midiNotes = [];
+  for (const [beat, note, length] of bar) {
+    midiNotes.push([beat, note]);
+    midiNotes.push([beat + length, { pitch: note.pitch }]);
+  }
+  midiNotes.sort(([a_b, a_n], [b_b, b_n]) => {
+    if (a_b < b_b || (a_b === b_b && !a_n.velocity && b_n.velocity)) {
+      return -1;
+    } else if (a_b > b_b || (a_b === b_b && a_n.velocity && !b_n.velocity)) {
+      return 1;
+    } else
+      return 0;
+  });
+  return midiNotes;
+});
+
 // based on the design by Chris Wilson to provide high precision audio scheduling https://github.com/cwilso/metronome
-export const createSequencer = (instrument, bpm: number, track: Track, ctx: AudioContext) => {
+export const createSequencer = (instrument, bpm: number, track: SimpleTrack, ctx: AudioContext) => {
   const lookAhead = 25.0; // how frequently to call scheduler (ms)
   const scheduleAhead = 100.0 / 1000; // how far to schedule ahead (s)
 
@@ -147,6 +146,8 @@ export const createSequencer = (instrument, bpm: number, track: Track, ctx: Audi
 
   const getTimeForPosition = (b, m) => (b * numMeasures + m) / bps;
 
+  const midiTrack = simpleTrackToMidiTrack(track);
+
   const schedule = () => {
     let t = ctx.currentTime;
     while(t < ctx.currentTime + scheduleAhead) {
@@ -155,13 +156,13 @@ export const createSequencer = (instrument, bpm: number, track: Track, ctx: Audi
         _stop();
         break;
       }
-      const [b, m, noteOn] = value;
+      const [b, m, note] = value;
       t = getTimeForPosition(b, m) + startTime;
 
       if(t >= ctx.currentTime + scheduleAhead) {
         break;
       }
-      instrument.attack(noteOn, t, pitchToFreq);
+      instrument.onMidi(note, t);
       noteIter.next();
     }
   };
@@ -170,6 +171,7 @@ export const createSequencer = (instrument, bpm: number, track: Track, ctx: Audi
     if (handle) {
       clock.stop();
       clock.removeTickHandler(handle);
+      instrument.stop();
       handle = null;
     }
   };
@@ -177,14 +179,15 @@ export const createSequencer = (instrument, bpm: number, track: Track, ctx: Audi
   let startTime = null;
   let handle = null;
   let noteIter = null;
-  let pitchToFreq = defaultPitchToFreq;
 
   return {
     outputs: instrument.outputs,
-    setPitchToFreq: (f) => { pitchToFreq = f; },
+    params: {
+      pitchToFreq: ctrlParam([instrument.params.pitchToFreq], defaultPitchToFreq),
+    },
     start: () => {
       if (!handle) {
-        noteIter = noteIterator(track);
+        noteIter = noteIterator(midiTrack);
         handle = clock.addTickHandler(schedule);
         startTime = ctx.currentTime;
         clock.start();

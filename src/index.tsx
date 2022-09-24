@@ -22,10 +22,11 @@ import { VolumeUp, VolumeDown } from '@mui/icons-material';
 
 import {array, range, map} from './iter';
 
-import { createMaster, createAttackReleaseOscillator, createPoly, createSequencer } from './audio';
+import { createMaster, createSequencer } from './audio';
+import { createPoly, createAdsrOsc } from './audio/oscillator';
 import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, eqTemperedTone, concertPitchFreq, A4 } from './tuning';
 
-import type { Sequencer, Track } from './audio';
+import type { Sequencer, SimpleTrack } from './audio';
 import { handleChange, useState } from './util';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -42,11 +43,13 @@ const volumeInput = (event, newValue: number) => {
 };
 
 const attackDt = 0.06;
+const decayDt = 0.06;
+const sustainVol = 0.01;
 const peakVol = 1;
 const releaseDt = 0.6;
 const oscillatorVoices = 4;
 
-const poly = createPoly(oscillatorVoices, createAttackReleaseOscillator, {attackDt, releaseDt, peakVol}, audioContext);
+const poly = createPoly(oscillatorVoices, createAdsrOsc, {attackDt, releaseDt, peakVol, decayDt, sustainVol}, audioContext);
 
 poly.outputs.map(o => o.connect(master.input));
 
@@ -85,33 +88,33 @@ const [E, F, Fs, G, Gs, A, Bb, B, c, cs, d, ds,
   e1, f1, f1s, g1] = array(map(i => ({ pitch: A4 - 17 + i, velocity: 127 }), range(28)));
 
 
-const greenSleeves: Track = {
+const greenSleeves: SimpleTrack = {
   timeSignature: [6, 3], // 6/8 where
   offset: 0,
   notes: [
     [ // 0
-      [0, A], [0, a], [0, c1],
-      [2, d1],
-      [3, c], [3, c1], [3, e1],
-      [4.5, f1],
-      [5, e1]
+      [0, A, 3], [0, a, 2], [0, c1, 2],
+      [2, d1, 1],
+      [3, c, 3], [3, c1, 1.5], [3, e1, 1.5],
+      [4.5, f1, 0.5],
+      [5, e1, 1]
     ], [ // 1
-      [0, G], [0, g], [0, d1],
-      [2, b],
-      [3, G], [3, d], [3, g],
-      [4.5, a],
-      [5, b]
+      [0, G, 3], [0, g, 2], [0, d1, 2],
+      [2, b, 1],
+      [3, G, 3], [3, d, 1.5], [3, g, 1.5],
+      [4.5, a, 0.5],
+      [5, b, 1]
     ], [
-      [0, A], [0, a], [0, c1],
-      [2, a],
-      [3, A], [3, a],
-      [4.5, g],
-      [5, a]
+      [0, A, 3], [0, a, 2], [0, c1, 2],
+      [2, a, 1],
+      [3, A, 3], [3, a, 1.5],
+      [4.5, g, 0.5],
+      [5, a, 1]
     ], [
-      [0, E], [0, g], [0, b],
-      [2, g],
-      [3, e],
-      [5, a]
+      [0, E, 6], [0, g, 2], [0, b, 2],
+      [2, g, 1],
+      [3, e, 2],
+      [5, a, 1]
     ]
   ]
 };
@@ -185,11 +188,11 @@ const ToneTableDoc = (props: { baseTone, tuning, refFreq }) => {
       <TableBody>
         {array(map(j => (
           <TableRow key={j}>
-            <TableCell><Button key={j} id={`note-${j}`} role="switch" variant="contained" onClick={() => poly.attack(
-              {pitch: j + startPitch, velocity: 127},
-              undefined,
-              tones
-            )}>{toneNames[j]}</Button></TableCell>
+            <TableCell><Button key={j} id={`note-${j}`} role="switch" variant="contained" onClick={() => {
+              const now = audioContext.currentTime;
+              poly.onMidi({ pitch: j + startPitch, velocity: 127 }, now);
+              poly.onMidi({ pitch: j + startPitch, velocity: 0 }, now + 0.1);
+            }}>{toneNames[j]}</Button></TableCell>
             <TableCell>{pitchNames[(j + baseTone.value) % 12]}</TableCell>
             <TableCell>{tones(j + startPitch).toFixed(2)}</TableCell>
             <TableCell>{diffInCents(tones(j + startPitch), etTones(j + startPitch)).toFixed(2)}</TableCell>
@@ -232,7 +235,7 @@ const BodyDoc = () => {
     const baseFreq = refFreqs[refFreq.value].freq * eqTemperedTone(baseToneFromA);
     const basePitch = A4 + baseToneFromA;
     const tones = pitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
-    sequencer.setPitchToFreq(tones);
+    sequencer.params.pitchToFreq.value = tones;
   }, [baseTone, refFreq, tuning]);
 
   return <div id="body">
