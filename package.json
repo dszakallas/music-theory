@@ -39,7 +39,7 @@
     "@mui/icons-material": "^5.10.3",
     "@mui/material": "^5.10.6",
     "@types/jest": "^28.1.7",
-    "@types/node": "^18.7.11",
+    "@types/node": "^18.7.22",
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
     "react": "^18.2.0",
