@@ -1,21 +1,42 @@
 import type {Ar, Adsr} from './envelope';
 import { range, array, map } from '../iter';
-import { defaultPitchToFreq, ctrlParam } from '../audio';
-import type { MidiNote, Instrument } from '../audio';
+import { enumParam, leaderParam, opaqueParam } from './device';
+import type { MidiNote, Instrument, EnumParam } from './device';
+import { defaultPitchToFreq } from '../audio';
+import type { Enum } from '../util';
 
 const timeToSteal = 0.01;
+
+export const waveformValues = ['sine', 'sawtooth', 'square', 'triangle'] as const;
+
+export const waveformParam: (props: { value: Enum<typeof waveformValues> }) => EnumParam<typeof waveformValues> = (props) => enumParam(waveformValues, props);
 
 export const createAdsrOsc: (adsr: Adsr, ctx: AudioContext) => Instrument = (adsr, ctx) => {
   const { attackDt, releaseDt, peakVol, sustainVol, decayDt } = adsr;
   const osc = ctx.createOscillator();
   const env = ctx.createGain();
+
+  let _waveform: Enum<typeof waveformValues> = defaultWaveform;
+
   env.gain.value = 0;
   osc.connect(env);
+  osc.type = _waveform;
   osc.start();
 
+
   return {
+    name: 'osc',
     params: {
-      pitchToFreq: { value: defaultPitchToFreq }
+      waveform: waveformParam({
+        get value() {
+          return _waveform;
+        },
+        set value(v) {
+          _waveform = v;
+          osc.type = v;
+        }
+      }),
+      pitchToFreq: opaqueParam({ value: defaultPitchToFreq })
     },
     outputs: [env],
     onMidi(note: MidiNote, time: number = undefined) {
@@ -34,6 +55,7 @@ export const createAdsrOsc: (adsr: Adsr, ctx: AudioContext) => Instrument = (ads
         this.stop(time);
       }
     },
+
     stop(time: number = undefined) {
       const startT = time || ctx.currentTime;
       env.gain.setTargetAtTime(0, startT, releaseDt / 3);
@@ -41,16 +63,19 @@ export const createAdsrOsc: (adsr: Adsr, ctx: AudioContext) => Instrument = (ads
   };
 };
 
+const defaultWaveform = 'sine';
 
-export const createPoly = function (numVoices: number, osc, ...args) {
-  const voices = array(map(() => osc(...args), range(numVoices)));
+export const createPoly: (numVoices: number, createOsc, ...args) => Instrument = function(numVoices: number, createOsc, ...args) {
+  const voices = array(map(() => createOsc(...args), range(numVoices)));
   let current = 0;
 
   let pressedNotes: {[key: number]: number} = {};
 
   return {
+    name: 'poly',
     params: {
-      pitchToFreq: ctrlParam(voices.map(v => v.params.pitchToFreq), defaultPitchToFreq)
+      pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, voices.map(v => v.params.pitchToFreq)),
+      waveform: leaderParam(waveformParam, defaultWaveform, voices.map(v => v.params.waveform))
     },
     outputs: voices.flatMap(v => v.outputs),
     onMidi(note: MidiNote, time: number = undefined) {

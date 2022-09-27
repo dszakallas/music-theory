@@ -1,9 +1,9 @@
-import { range, array, map } from '../iter';
 import { Clock } from '../clock';
 import { scales, pitchToFreq } from '../tuning';
+import type { Fx, MidiNote, TypedParam, MkParam } from './device';
+import { opaqueParam, leaderParam } from './device';
 
-
-export const createMaster = (ctx: AudioContext) => {
+export const createMaster: (ctx: AudioContext) => Fx = (ctx: AudioContext) => {
   const compr = ctx.createDynamicsCompressor();
   const gain = ctx.createGain();
 
@@ -16,9 +16,12 @@ export const createMaster = (ctx: AudioContext) => {
   compr.connect(gain);
 
   return {
-    input: compr,
-    output: gain,
-    gain: gain.gain
+    name: 'master',
+    inputs: [compr],
+    outputs: [gain],
+    params: {
+      gain: gain.gain
+    }
   };
 };
 
@@ -38,20 +41,6 @@ const sampleAttackRelease = (at, p, rt, s) => {
   return samples;
 };
 
-
-export type MidiNote = {
-  pitch: number,
-  velocity: number
-};
-
-export type Param = { value: any };
-
-export type Instrument = {
-  params: { [name: string]: Param },
-  outputs: Array<AudioNode>,
-  onMidi: (note: MidiNote, time: number) => void,
-  stop: (time: number) => void
-};
 
 export type Beat = number;
 
@@ -87,26 +76,6 @@ const noteIterator = function*(track: MidiTrack, repeat = true) {
 
 
 export const defaultPitchToFreq = pitchToFreq(scales['12tet']);
-
-export const ctrlParam = (followers, defaultValue) => {
-  let _value = defaultValue;
-  function updateFollowers() {
-    for (const follower of followers) {
-      follower.value = _value;
-    }
-  }
-
-  updateFollowers();
-  return {
-    get value() {
-      return _value;
-    },
-    set value(v) {
-      _value = v;
-      updateFollowers();
-    }
-  };
-};
 
 export type Sequencer = {
   start: () => void,
@@ -181,11 +150,12 @@ export const createSequencer = (instrument, bpm: number, track: SimpleTrack, ctx
   let noteIter = null;
 
   return {
+    name: 'seq',
     outputs: instrument.outputs,
     params: {
-      pitchToFreq: ctrlParam([instrument.params.pitchToFreq], defaultPitchToFreq),
+      pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, [instrument.params.pitchToFreq]),
     },
-    start: () => {
+    start() {
       if (!handle) {
         noteIter = noteIterator(midiTrack);
         handle = clock.addTickHandler(schedule);
@@ -194,6 +164,6 @@ export const createSequencer = (instrument, bpm: number, track: SimpleTrack, ctx
       }
     },
 
-    stop: () => { _stop(); }
+    stop() { _stop(); }
   };
 };

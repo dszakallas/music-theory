@@ -23,8 +23,10 @@ import { VolumeUp, VolumeDown } from '@mui/icons-material';
 import {array, range, map} from './iter';
 
 import { createMaster, createSequencer } from './audio';
-import { createPoly, createAdsrOsc } from './audio/oscillator';
+import { createPoly, createAdsrOsc, waveformValues } from './audio/oscillator';
 import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, eqTemperedTone, concertPitchFreq, A4 } from './tuning';
+
+import GenericAudioDevice from './ui/generic_audio_device';
 
 import type { Sequencer, SimpleTrack } from './audio';
 import { handleChange, useState } from './util';
@@ -35,11 +37,11 @@ const audioContext = new AudioContext();
 
 const master = createMaster(audioContext);
 
-master.output.connect(audioContext.destination);
+master.outputs[0].connect(audioContext.destination);
 
 const volumeInput = (event, newValue: number) => {
   const volume = sliderValueToVolume(newValue);
-  master.gain.value = volume;
+  master.params.gain.value = volume;
 };
 
 const attackDt = 0.06;
@@ -51,7 +53,7 @@ const oscillatorVoices = 4;
 
 const poly = createPoly(oscillatorVoices, createAdsrOsc, {attackDt, releaseDt, peakVol, decayDt, sustainVol}, audioContext);
 
-poly.outputs.map(o => o.connect(master.input));
+poly.outputs.map(o => o.connect(master.inputs[0]));
 
 const maxVol = 1.0;
 const minVol = 0.0;
@@ -65,7 +67,7 @@ const volumeToSliderValue = v => {
   return (v - minVol) / (maxVol - minVol);
 };
 
-master.gain.value = initialVol;
+master.params.gain.value = initialVol;
 
 type Tuning = {name: string, description: string, tones: Array<number>};
 
@@ -127,7 +129,7 @@ const TuningSystemDoc = (props: { baseTone, tuning, refFreq }) => {
       <ToggleButtonGroup
         value={baseTone.value}
         exclusive
-        onChange={handleChange(baseTone.set)}
+        onChange={handleChange(baseTone.set, false)}
         aria-label="baseTone"
       >
         {pitchNames.map((e, j) => (
@@ -140,7 +142,7 @@ const TuningSystemDoc = (props: { baseTone, tuning, refFreq }) => {
       <ToggleButtonGroup
         value={refFreq.value}
         exclusive
-        onChange={handleChange(refFreq.set)}
+        onChange={handleChange(refFreq.set, false)}
         aria-label="reference frequency"
       >
         {refFreqs.map((e, j) => (
@@ -154,7 +156,7 @@ const TuningSystemDoc = (props: { baseTone, tuning, refFreq }) => {
       <ToggleButtonGroup
         value={tuning.value}
         exclusive
-        onChange={handleChange(tuning.set)}
+        onChange={handleChange(tuning.set, false)}
         aria-label="baseTone"
       >
         {tunings.map((e, j) => (
@@ -217,6 +219,27 @@ const PlayerDoc = (props: { playing }) => {
 };
 
 
+const InstrumentDoc = (props: {waveform}) => {
+  const { waveform } = props;
+  return <Paper elevation={4}>
+    Oscillator
+    <Stack spacing={2} direction="row">
+      <span>Waveform</span>
+      <ToggleButtonGroup
+        value={waveform.value}
+        exclusive
+        onChange={handleChange(waveform.set)}
+        aria-label="waveform"
+      >
+        {waveformValues.map((e, j) => (
+          <ToggleButton key={j} value={j}>{e}</ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+    </Stack>
+  </Paper>;
+};
+
+
 const sequencer = createSequencer(poly, 120, greenSleeves, audioContext);
 
 const BodyDoc = () => {
@@ -227,8 +250,7 @@ const BodyDoc = () => {
 
   useEffect(() => {
     playing.value ? sequencer.start() : sequencer.stop();
-  }, [playing.value]);
-
+  }, [playing]);
 
   useEffect(() => {
     const baseToneFromA = baseTone.value - 9;
@@ -241,6 +263,7 @@ const BodyDoc = () => {
   return <div id="body">
     <h1>Music Theory</h1>
     <PlayerDoc playing={playing}></PlayerDoc>
+    <GenericAudioDevice audioDevice={poly}></GenericAudioDevice>
     <TuningSystemDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>
     <ToneTableDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>
   </div>;
