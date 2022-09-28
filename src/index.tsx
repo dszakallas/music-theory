@@ -263,6 +263,7 @@ const BodyDoc = () => {
   return <div id="body">
     <h1>Music Theory</h1>
     <PlayerDoc playing={playing}></PlayerDoc>
+    <GenericAudioDevice audioDevice={sequencer}></GenericAudioDevice>
     <GenericAudioDevice audioDevice={poly}></GenericAudioDevice>
     <TuningSystemDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>
     <ToneTableDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>

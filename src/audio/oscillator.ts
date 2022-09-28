@@ -1,6 +1,6 @@
 import type {Ar, Adsr} from './envelope';
 import { range, array, map } from '../iter';
-import { enumParam, leaderParam, opaqueParam } from './device';
+import { enumParam, EnumParamType, leaderParam, opaqueParam } from './device';
 import type { MidiNote, Instrument, EnumParam } from './device';
 import { defaultPitchToFreq } from '../audio';
 import type { Enum } from '../util';
@@ -8,8 +8,9 @@ import type { Enum } from '../util';
 const timeToSteal = 0.01;
 
 export const waveformValues = ['sine', 'sawtooth', 'square', 'triangle'] as const;
+export const waveformParamType: EnumParamType<typeof waveformValues> = new EnumParamType(waveformValues);
 
-export const waveformParam: (props: { value: Enum<typeof waveformValues> }) => EnumParam<typeof waveformValues> = (props) => enumParam(waveformValues, props);
+export const waveformParam: (props: { value: Enum<typeof waveformValues> }) => EnumParam<typeof waveformValues> = (props) => enumParam(waveformParamType, props);
 
 export const createAdsrOsc: (adsr: Adsr, ctx: AudioContext) => Instrument = (adsr, ctx) => {
   const { attackDt, releaseDt, peakVol, sustainVol, decayDt } = adsr;

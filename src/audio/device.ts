@@ -6,6 +6,20 @@ export interface TypedParam<TypeTag, T> {
   type: TypeTag
 }
 
+const typedParam = <TT, T>(type: TT, props: { value: T }) => Object.defineProperties({
+  type,
+  defaultValue: props.value,
+  ...props
+}, Object.getOwnPropertyDescriptors(props));
+
+export class BooleanParamType {}
+
+export const booleanParamType = new BooleanParamType();
+
+export type BooleanParam = TypedParam<BooleanParamType, boolean>;
+
+export const booleanParam: (props: { value: boolean }) => BooleanParam = (props) => typedParam(booleanParamType, props);
+
 export class EnumParamType<T> {
   values: EnumValues<T>;
   constructor(values) {
@@ -13,30 +27,20 @@ export class EnumParamType<T> {
   }
 }
 
-
 // Enum params come from a distinct set of values
-export interface EnumParam<T> extends TypedParam<EnumParamType<T>, Enum<T>> {
-  type: EnumParamType<T>
-}
+export type EnumParam<T> = TypedParam<EnumParamType<T>, Enum<T>>;
 
-const paramCopy = <TT, T> (type: TT, props: { value: T }) => Object.defineProperties({
-  type,
-  defaultValue: props.value,
-  ...props
-}, Object.getOwnPropertyDescriptors(props));
-
-export const enumParam: <T> (values: EnumValues<T>, props: { value: Enum<T> }) => EnumParam<T> = (values, props) => paramCopy(new EnumParamType(values), props);
-
+export const enumParam: <T> (type: EnumParamType<T>, props: { value: Enum<T> }) => EnumParam<T> = (type, props) => typedParam(type, props);
 
 export class OpaqueParamType {}
 
 // Opaque params are an escape hatch for params we don't want to be controlled
 // through a generic interface.
-export interface OpaqueParam<T> extends TypedParam<OpaqueParamType, T> {
-  type: OpaqueParamType;
-}
+export type OpaqueParam<T> = TypedParam<OpaqueParamType, T>;
 
-export const opaqueParam: <T> (props: { value: T }) => OpaqueParam<T> = (props) => paramCopy(new OpaqueParamType(), props);
+const opaqueParamType = new OpaqueParamType();
+
+export const opaqueParam: <T> (props: { value: T }) => OpaqueParam<T> = (props) => typedParam(opaqueParamType, props);
 
 export type Param<TT, T> = AudioParam | TypedParam<TT, T>;
 

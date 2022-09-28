@@ -52,3 +52,11 @@ export const useState = (s) => {
 export const noop = () => { // eslint-disable-line: @typescript-eslint/no-empty-function
 };
 
+export function isWritable<T extends Record<string, unknown>>(obj: T, key: keyof T) {
+  let desc = null;
+  do {
+    desc = Object.getOwnPropertyDescriptor(obj, key);
+    obj = Object.getPrototypeOf(obj);
+  } while (desc == null && obj != null);
+  return Boolean(desc.writable);
+}

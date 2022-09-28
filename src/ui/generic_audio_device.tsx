@@ -8,6 +8,7 @@ import {
   Param,
   EnumParamType,
   OpaqueParamType,
+  BooleanParamType,
 } from '../audio/device';
 
 import React, { useEffect, Dispatch } from 'react';
@@ -59,6 +60,12 @@ export default function GenericAudioDevice (props: { audioDevice: AudioDevice })
                 onChange={handleChange(paramState.set)}
                 value={paramState.value}
               />
+            );
+          } else if (param.type instanceof BooleanParamType) {
+            comp = (
+              <ToggleButton value={true} onChange={handleChange(paramState.set)}>
+                {name}
+              </ToggleButton>
             );
           } else if (param.type instanceof EnumParamType) {
             comp = (
