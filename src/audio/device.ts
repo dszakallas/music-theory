@@ -47,7 +47,7 @@ export type Param<TT, T> = AudioParam | TypedParam<TT, T>;
 export type MkParam<TT, T> = (props: { value: T }) => TypedParam<TT, T>;
 
 // A param (leader) that controls other parameters (followers). Followers must be of the same type.
-export const leaderParam: <TT, T> (mkParam: MkParam<TT, T>, defaultValue: T, followers: Array<TypedParam<TT, T>>) => TypedParam<TT, T> = (mkParam, defaultValue, followers) => {
+export const leaderParam: <TT, T> (mkParam: MkParam<TT, T>, defaultValue: T, followers: Array<Param<TT, T>>) => Param<TT, T> = (mkParam, defaultValue, followers) => {
   let _value = defaultValue;
   function updateFollowers() {
     for (const follower of followers) {
@@ -80,6 +80,7 @@ export type MidiNote = {
 
 export interface Instrument extends AudioDevice {
   stop(time: number): void
+  stop(): void
   onMidi(note: MidiNote, time: number): void
 }
 

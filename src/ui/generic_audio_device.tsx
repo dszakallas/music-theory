@@ -63,9 +63,15 @@ export default function GenericAudioDevice (props: { audioDevice: AudioDevice })
             );
           } else if (param.type instanceof BooleanParamType) {
             comp = (
-              <ToggleButton value={true} onChange={handleChange(paramState.set)}>
-                {name}
-              </ToggleButton>
+              <ToggleButtonGroup
+                value={paramState.value}
+                exclusive
+                onChange={handleChange(paramState.set, true)}
+              >
+                <ToggleButton value={true}>
+                  {name}
+                </ToggleButton>
+              </ToggleButtonGroup>
             );
           } else if (param.type instanceof EnumParamType) {
             comp = (

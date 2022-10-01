@@ -2,28 +2,7 @@ import { Clock } from '../clock';
 import { scales, pitchToFreq } from '../tuning';
 import { booleanParam, Fx, MidiNote } from './device';
 import { opaqueParam, leaderParam } from './device';
-
-export const createMaster: (ctx: AudioContext) => Fx = (ctx: AudioContext) => {
-  const compr = ctx.createDynamicsCompressor();
-  const gain = ctx.createGain();
-
-  compr.threshold.value = -18;
-  compr.knee.value = 12;
-  compr.ratio.value = 20;
-  compr.attack.value = 0;
-  compr.release.value = 0.2;
-
-  compr.connect(gain);
-
-  return {
-    name: 'master',
-    inputs: [compr],
-    outputs: [gain],
-    params: {
-      gain: gain.gain,
-    },
-  };
-};
+import { MidiTrack } from './midi_track';
 
 const sampleAttackRelease = (at, p, rt, s) => {
   const samples = new Array(s);
@@ -45,23 +24,21 @@ export type Beat = number;
 
 export type Note = [Beat, MidiNote, number];
 
-export type SimpleTrack = {
-  timeSignature: [number, number]; // should be encoded so that time signature := timeSignature[0] / 2 ^ -1 * timeSignature[1], e.g 6/8 := [6, 3]
+export type MidiClip = {
+  timeSignature: [number, number]; // denominator should be encoded by power e.g 6/8 := [6, 3]
   offset: number; // offset start/end by number of notes
-  notes: Array<Array<Note>>;
+  notes: Array<Array<[Beat, MidiNote]>>;
 };
 
-export type MidiTrack = Array<Array<[Beat, MidiNote]>>;
-
-const noteIterator = function* (track: MidiTrack, repeat = true) {
+const noteIterator = function* (clip: MidiClip, repeat = true) {
   let [r, i, j] = [0, 0, 0];
   do {
     i = 0;
-    const numBars = track.length;
+    const numBars = clip.notes.length;
     while (i < numBars) {
       j = 0;
-      while (j < track[i].length) {
-        const [beat, pitch] = track[i][j];
+      while (j < clip.notes[i].length) {
+        const [beat, pitch] = clip.notes[i][j];
         const ctrl = yield [r * numBars + i, beat, pitch];
         if (ctrl == 'peek') --j;
         ++j;
@@ -81,30 +58,14 @@ export type Sequencer = {
   setPitchToFreq: any;
 };
 
-const simpleTrackToMidiTrack = (track: SimpleTrack) =>
-  track.notes.map((bar) => {
-    const midiNotes = [];
-    for (const [beat, note, length] of bar) {
-      midiNotes.push([beat, note]);
-      midiNotes.push([beat + length, { pitch: note.pitch }]);
-    }
-    midiNotes.sort(([a_b, a_n], [b_b, b_n]) => {
-      if (a_b < b_b || (a_b === b_b && !a_n.velocity && b_n.velocity)) {
-        return -1;
-      } else if (a_b > b_b || (a_b === b_b && a_n.velocity && !b_n.velocity)) {
-        return 1;
-      } else return 0;
-    });
-    return midiNotes;
-  });
 
 // based on the design by Chris Wilson to provide high precision audio scheduling https://github.com/cwilso/metronome
 export const createSequencer = (
-  instrument,
   bpm: number,
-  track: SimpleTrack,
+  midiTrack: MidiTrack,
   ctx: AudioContext
 ) => {
+  const { instrument, clip } = midiTrack;
   const lookAhead = 25.0; // how frequently to call scheduler (ms)
   const scheduleAhead = 100.0 / 1000; // how far to schedule ahead (s)
 
@@ -112,11 +73,9 @@ export const createSequencer = (
 
   const bps = bpm / 60;
 
-  const numMeasures = track.timeSignature[0];
+  const numMeasures = clip.timeSignature[0];
 
   const getTimeForPosition = (b, m) => (b * numMeasures + m) / bps;
-
-  const midiTrack = simpleTrackToMidiTrack(track);
 
   const schedule = () => {
     let t = ctx.currentTime;
@@ -148,7 +107,7 @@ export const createSequencer = (
 
   const _start = () => {
     if (!handle) {
-      noteIter = noteIterator(midiTrack);
+      noteIter = noteIterator(clip);
       handle = clock.addTickHandler(schedule);
       startTime = ctx.currentTime;
       clock.start();
@@ -171,6 +130,7 @@ export const createSequencer = (
           return !!handle;
         },
         set value(v) {
+          console.log('called!', v);
           v ? _start() : _stop();
         }
       })

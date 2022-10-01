@@ -22,20 +22,22 @@ import { VolumeUp, VolumeDown } from '@mui/icons-material';
 
 import {array, range, map} from './iter';
 
-import { createMaster, createSequencer } from './audio';
+import { createSequencer } from './audio';
+import { createMasterGain } from './audio/fx';
 import { createPoly, createAdsrOsc, waveformValues } from './audio/oscillator';
 import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, eqTemperedTone, concertPitchFreq, A4 } from './tuning';
 
 import GenericAudioDevice from './ui/generic_audio_device';
 
-import type { Sequencer, SimpleTrack } from './audio';
+import type { MidiClip } from './audio';
 import { handleChange, useState } from './util';
+import { createMidiTrack } from './audio/midi_track';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 const audioContext = new AudioContext();
 
-const master = createMaster(audioContext);
+const master = createMasterGain(audioContext);
 
 master.outputs[0].connect(audioContext.destination);
 
@@ -90,10 +92,26 @@ const [E, F, Fs, G, Gs, A, Bb, B, c, cs, d, ds,
   e1, f1, f1s, g1] = array(map(i => ({ pitch: A4 - 17 + i, velocity: 127 }), range(28)));
 
 
-const greenSleeves: SimpleTrack = {
+const convertNotes = (notes) => notes.map((bar) => {
+  const midinotes = [];
+  for (const [beat, note, length] of bar) {
+    midinotes.push([beat, note]);
+    midinotes.push([beat + length, { pitch: note.pitch }]);
+  }
+  midinotes.sort(([a_b, a_n], [b_b, b_n]) => {
+    if (a_b < b_b || (a_b === b_b && !a_n.velocity && b_n.velocity)) {
+      return -1;
+    } else if (a_b > b_b || (a_b === b_b && a_n.velocity && !b_n.velocity)) {
+      return 1;
+    } else return 0;
+  });
+  return midinotes;
+});
+
+const greenSleeves: MidiClip = {
   timeSignature: [6, 3], // 6/8 where
   offset: 0,
-  notes: [
+  notes: convertNotes([
     [ // 0
       [0, A, 3], [0, a, 2], [0, c1, 2],
       [2, d1, 1],
@@ -118,7 +136,7 @@ const greenSleeves: SimpleTrack = {
       [3, e, 2],
       [5, a, 1]
     ]
-  ]
+  ])
 };
 
 const TuningSystemDoc = (props: { baseTone, tuning, refFreq }) => {
@@ -239,8 +257,9 @@ const InstrumentDoc = (props: {waveform}) => {
   </Paper>;
 };
 
+const greenSleevesTrack = createMidiTrack(poly, greenSleeves, audioContext);
 
-const sequencer = createSequencer(poly, 120, greenSleeves, audioContext);
+const sequencer = createSequencer(120, greenSleevesTrack, audioContext);
 
 const BodyDoc = () => {
   const tuning = useState(0);
