@@ -9,6 +9,8 @@ import {
   EnumParamType,
   OpaqueParamType,
   BooleanParamType,
+  isOfType,
+  VolumeParamType,
 } from '../audio/device';
 
 import React, { useEffect, Dispatch } from 'react';
@@ -31,7 +33,9 @@ const paramState = (param: Param<any, any>): ParamState => ({
   ...useState(param.defaultValue),
 });
 
-export default function GenericAudioDevice (props: { audioDevice: AudioDevice }) {
+export default function GenericAudioDevice(props: {
+  audioDevice: AudioDevice;
+}) {
   const { audioDevice } = props;
   const paramStates: Array<[string, ParamState]> = Object.entries(
     audioDevice.params
@@ -50,30 +54,17 @@ export default function GenericAudioDevice (props: { audioDevice: AudioDevice })
         {paramStates.map(([name, paramState]) => {
           const { param } = paramState;
           let comp = null;
-          if (param instanceof AudioParam) {
-            const step = (param.maxValue - param.minValue) / sliderResolution;
-            comp = (
-              <Slider
-                min={param.minValue}
-                max={param.maxValue}
-                step={step}
-                onChange={handleChange(paramState.set)}
-                value={paramState.value}
-              />
-            );
-          } else if (param.type instanceof BooleanParamType) {
+          if (isOfType(param, BooleanParamType)) {
             comp = (
               <ToggleButtonGroup
                 value={paramState.value}
                 exclusive
                 onChange={handleChange(paramState.set, true)}
               >
-                <ToggleButton value={true}>
-                  {name}
-                </ToggleButton>
+                <ToggleButton value={true}>{name}</ToggleButton>
               </ToggleButtonGroup>
             );
-          } else if (param.type instanceof EnumParamType) {
+          } else if (isOfType(param, EnumParamType<[any]>)) {
             comp = (
               <ToggleButtonGroup
                 value={paramState.value}
@@ -87,10 +78,41 @@ export default function GenericAudioDevice (props: { audioDevice: AudioDevice })
                 ))}
               </ToggleButtonGroup>
             );
-          } else if (param.type instanceof OpaqueParamType) {
+          } else if (isOfType(param, VolumeParamType)) {
+            const step =
+              (param.type.maxValue - param.type.minValue) / sliderResolution;
+            comp = (
+              <React.Fragment>
+                <span>{param.type.minValue.toPrecision(3)}</span>
+                <Slider
+                  min={param.type.minValue}
+                  max={param.type.maxValue}
+                  step={step}
+                  onChange={handleChange(paramState.set)}
+                  value={paramState.value}
+                />
+                <span>{param.type.maxValue.toPrecision(3)}</span>
+              </React.Fragment>
+            );
+          } else if (isOfType(param, OpaqueParamType)) {
             comp = <span>{param.toString()}</span>;
+          } else if (param instanceof AudioParam) {
+            const step = (param.maxValue - param.minValue) / sliderResolution;
+            comp = (
+              <React.Fragment>
+                <span>{param.minValue.toPrecision(3)}</span>
+                <Slider
+                  min={param.minValue}
+                  max={param.maxValue}
+                  step={step}
+                  onChange={handleChange(paramState.set)}
+                  value={paramState.value}
+                />
+                <span>{param.maxValue.toPrecision(3)}</span>
+              </React.Fragment>
+            );
           } else {
-            throw Error('Shouldn\'t happen!');
+            throw Error('Should not happen!');
           }
           return (
             <Stack spacing={2} direction="row" key={name}>

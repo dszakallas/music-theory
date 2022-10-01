@@ -1,10 +1,10 @@
-import { Fx } from './device';
+import { Fx, volumeParam, VolumeParam } from './device';
 
 export interface TrackGain extends Fx {
-  params: { gain: AudioParam }
+  params: { gain: VolumeParam }
 }
 
-export const createTrackGain: (ctx: AudioContext) => TrackGain = (ctx: AudioContext) => {
+export const createTrackGain = (ctx: AudioContext) : TrackGain => {
   const gain = ctx.createGain();
 
   return {
@@ -12,13 +12,13 @@ export const createTrackGain: (ctx: AudioContext) => TrackGain = (ctx: AudioCont
     inputs: [gain],
     outputs: [gain],
     params: {
-      gain: gain.gain,
+      gain: volumeParam(gain.gain),
     },
   };
 };
 
 
-export const createMasterGain: (ctx: AudioContext) => Fx = (ctx: AudioContext) => {
+export const createMasterGain = (ctx: AudioContext) : Fx => {
   const compr = ctx.createDynamicsCompressor();
   const gain = ctx.createGain();
 

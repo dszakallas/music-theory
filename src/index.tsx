@@ -32,6 +32,7 @@ import GenericAudioDevice from './ui/generic_audio_device';
 import type { MidiClip } from './audio';
 import { handleChange, useState } from './util';
 import { createMidiTrack } from './audio/midi_track';
+import TrackLane from './ui/track_lane';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -45,17 +46,6 @@ const volumeInput = (event, newValue: number) => {
   const volume = sliderValueToVolume(newValue);
   master.params.gain.value = volume;
 };
-
-const attackDt = 0.06;
-const decayDt = 0.06;
-const sustainVol = 0.01;
-const peakVol = 1;
-const releaseDt = 0.6;
-const oscillatorVoices = 4;
-
-const poly = createPoly(oscillatorVoices, createAdsrOsc, {attackDt, releaseDt, peakVol, decayDt, sustainVol}, audioContext);
-
-poly.outputs.map(o => o.connect(master.inputs[0]));
 
 const maxVol = 1.0;
 const minVol = 0.0;
@@ -257,9 +247,20 @@ const InstrumentDoc = (props: {waveform}) => {
   </Paper>;
 };
 
-const greenSleevesTrack = createMidiTrack(poly, greenSleeves, audioContext);
+const attackDt = 0.06;
+const decayDt = 0.06;
+const sustainVol = 0.01;
+const peakVol = 1;
+const releaseDt = 0.6;
+const oscillatorVoices = 4;
 
-const sequencer = createSequencer(120, greenSleevesTrack, audioContext);
+const poly = createPoly(audioContext, oscillatorVoices, createAdsrOsc, {attackDt, releaseDt, peakVol, decayDt, sustainVol});
+
+const greenSleevesTrack = createMidiTrack(audioContext, poly, greenSleeves);
+
+greenSleevesTrack.outputs[0].connect(master.inputs[0]);
+
+const sequencer = createSequencer(audioContext, 120, greenSleevesTrack);
 
 const BodyDoc = () => {
   const tuning = useState(0);
@@ -282,7 +283,7 @@ const BodyDoc = () => {
   return <div id="body">
     <h1>Music Theory</h1>
     <PlayerDoc playing={playing}></PlayerDoc>
-    <GenericAudioDevice audioDevice={sequencer}></GenericAudioDevice>
+    <TrackLane midiTrack={greenSleevesTrack} />
     <GenericAudioDevice audioDevice={poly}></GenericAudioDevice>
     <TuningSystemDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>
     <ToneTableDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>

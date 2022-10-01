@@ -61,9 +61,9 @@ export type Sequencer = {
 
 // based on the design by Chris Wilson to provide high precision audio scheduling https://github.com/cwilso/metronome
 export const createSequencer = (
+  ctx: AudioContext,
   bpm: number,
-  midiTrack: MidiTrack,
-  ctx: AudioContext
+  midiTrack: MidiTrack
 ) => {
   const { instrument, clip } = midiTrack;
   const lookAhead = 25.0; // how frequently to call scheduler (ms)
@@ -119,8 +119,6 @@ export const createSequencer = (
   let noteIter = null;
 
   return {
-    name: 'seq',
-    outputs: instrument.outputs,
     params: {
       pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, [
         instrument.params.pitchToFreq,
@@ -130,7 +128,6 @@ export const createSequencer = (
           return !!handle;
         },
         set value(v) {
-          console.log('called!', v);
           v ? _start() : _stop();
         }
       })

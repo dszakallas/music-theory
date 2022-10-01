@@ -12,7 +12,7 @@ export const waveformParamType: EnumParamType<typeof waveformValues> = new EnumP
 
 export const waveformParam: (props: { value: Enum<typeof waveformValues> }) => EnumParam<typeof waveformValues> = (props) => enumParam(waveformParamType, props);
 
-export const createAdsrOsc: (adsr: Adsr, ctx: AudioContext) => Instrument = (adsr, ctx) => {
+export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): Instrument => {
   const { attackDt, releaseDt, peakVol, sustainVol, decayDt } = adsr;
   const osc = ctx.createOscillator();
   const env = ctx.createGain();
@@ -66,19 +66,21 @@ export const createAdsrOsc: (adsr: Adsr, ctx: AudioContext) => Instrument = (ads
 
 const defaultWaveform = 'sine';
 
-export const createPoly: (numVoices: number, createOsc, ...args) => Instrument = function(numVoices: number, createOsc, ...args) {
-  const voices = array(map(() => createOsc(...args), range(numVoices)));
+export function createPoly(ctx: AudioContext, numVoices: number, createOsc, ...args): Instrument {
+  const voices = array(map(() => createOsc(ctx, ...args), range(numVoices)));
+  const gain = ctx.createGain();
   let current = 0;
 
   let pressedNotes: {[key: number]: number} = {};
 
+  voices.map(v => v.outputs[0].connect(gain));
   return {
     name: 'poly',
     params: {
       pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, voices.map(v => v.params.pitchToFreq)),
       waveform: leaderParam(waveformParam, defaultWaveform, voices.map(v => v.params.waveform))
     },
-    outputs: voices.flatMap(v => v.outputs),
+    outputs: [gain],
     onMidi(note: MidiNote, time: number = undefined) {
       const { pitch, velocity } = note;
       if (velocity) {
@@ -97,4 +99,4 @@ export const createPoly: (numVoices: number, createOsc, ...args) => Instrument =
       pressedNotes = {};
     }
   };
-};
+}

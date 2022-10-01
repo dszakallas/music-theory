@@ -6,7 +6,7 @@ export interface TypedParam<TypeTag, T> {
   type: TypeTag
 }
 
-const typedParam = <TT, T>(type: TT, props: { value: T }) => Object.defineProperties({
+const typedParam = <TT, T>(type: TT, props: { value: T, [index: string]: any }): TypedParam<TT, T> => Object.defineProperties({
   type,
   defaultValue: props.value,
   ...props
@@ -18,7 +18,7 @@ export const booleanParamType = new BooleanParamType();
 
 export type BooleanParam = TypedParam<BooleanParamType, boolean>;
 
-export const booleanParam: (props: { value: boolean }) => BooleanParam = (props) => typedParam(booleanParamType, props);
+export const booleanParam = (props: { value: boolean }) : BooleanParam => typedParam(booleanParamType, props);
 
 export class EnumParamType<T> {
   values: EnumValues<T>;
@@ -30,7 +30,36 @@ export class EnumParamType<T> {
 // Enum params come from a distinct set of values
 export type EnumParam<T> = TypedParam<EnumParamType<T>, Enum<T>>;
 
-export const enumParam: <T> (type: EnumParamType<T>, props: { value: Enum<T> }) => EnumParam<T> = (type, props) => typedParam(type, props);
+export const enumParam = <T> (type: EnumParamType<T>, props: { value: Enum<T> }): EnumParam<T> => typedParam(type, props);
+
+export class FloatParamType {
+  minValue: number;
+  maxValue: number;
+  constructor(minValue: number, maxValue: number) {
+    this.minValue = minValue;
+    this.maxValue = maxValue;
+  }
+}
+
+export class VolumeParamType extends FloatParamType {
+  constructor() {
+    super(0, 1);
+  }
+}
+
+export const volumeParamType = new VolumeParamType();
+
+export type VolumeParam = TypedParam<VolumeParamType, number>;
+
+export const volumeParam = (audioParam: AudioParam): VolumeParam => typedParam(volumeParamType, {
+  audioParam,
+  get value() {
+    return audioParam.value;
+  },
+  set value(v) {
+    audioParam.value = v;
+  }
+});
 
 export class OpaqueParamType {}
 
@@ -40,14 +69,18 @@ export type OpaqueParam<T> = TypedParam<OpaqueParamType, T>;
 
 const opaqueParamType = new OpaqueParamType();
 
-export const opaqueParam: <T> (props: { value: T }) => OpaqueParam<T> = (props) => typedParam(opaqueParamType, props);
+export const opaqueParam = <T> (props: { value: T }): OpaqueParam<T> => typedParam(opaqueParamType, props);
 
 export type Param<TT, T> = AudioParam | TypedParam<TT, T>;
 
 export type MkParam<TT, T> = (props: { value: T }) => TypedParam<TT, T>;
 
+export const isOfType = <TT, T>(p: Param<TT, T>, tt: { new(...args: any): TT }): p is TypedParam<TT, T> => {
+  return 'type' in p && p.type instanceof tt;
+};
+
 // A param (leader) that controls other parameters (followers). Followers must be of the same type.
-export const leaderParam: <TT, T> (mkParam: MkParam<TT, T>, defaultValue: T, followers: Array<Param<TT, T>>) => Param<TT, T> = (mkParam, defaultValue, followers) => {
+export const leaderParam = <TT, T> (mkParam: MkParam<TT, T>, defaultValue: T, followers: Array<Param<TT, T>>): Param<TT, T> => {
   let _value = defaultValue;
   function updateFollowers() {
     for (const follower of followers) {
