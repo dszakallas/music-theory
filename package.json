@@ -6,12 +6,12 @@
   "main": "src/main.js",
   "homepage": "./",
   "scripts": {
-    "build": "react-scripts build",
+    "build": "node ./hack/react-build.js",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "electron": "electron .",
     "electron:start": "node src/start",
-    "react:start": "BROWSER=none react-scripts start",
+    "react:start": "BROWSER=none node ./hack/react-start.js",
     "pack": "build --dir",
     "dist": "npm run build && build",
     "lint": "eslint src/*",
@@ -30,7 +30,9 @@
     "electron": "^20.0.3",
     "electron-builder": "^23.3.3",
     "eslint": "^8.22.0",
-    "eslint-plugin-react": "^7.30.1"
+    "eslint-plugin-react": "^7.30.1",
+    "rewire": "^6.0.0",
+    "worker-url": "^1.1.0"
   },
   "dependencies": {
     "@emotion/react": "^11.10.4",
@@ -38,10 +40,12 @@
     "@fontsource/roboto": "^4.5.8",
     "@mui/icons-material": "^5.10.3",
     "@mui/material": "^5.10.6",
+    "@types/audioworklet": "^0.0.33",
     "@types/jest": "^28.1.7",
     "@types/node": "^18.7.11",
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
+    "js-beautify": "^1.14.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "^5.0.1",

@@ -14,7 +14,8 @@ import {
 } from '../audio/device';
 
 import React, { useEffect, Dispatch } from 'react';
-import { useState, handleChange } from '../util';
+import { useState, handleChange } from './util';
+import LevelMeter from './level_meter';
 
 const sliderResolution = 1000;
 
@@ -88,10 +89,12 @@ export default function GenericAudioDevice(props: {
                   min={param.type.minValue}
                   max={param.type.maxValue}
                   step={step}
+                  orientation="vertical"
                   onChange={handleChange(paramState.set)}
                   value={paramState.value}
                 />
                 <span>{param.type.maxValue.toPrecision(3)}</span>
+                <LevelMeter device={audioDevice} />
               </React.Fragment>
             );
           } else if (isOfType(param, OpaqueParamType)) {
@@ -105,6 +108,7 @@ export default function GenericAudioDevice(props: {
                   min={param.minValue}
                   max={param.maxValue}
                   step={step}
+                  orientation="vertical"
                   onChange={handleChange(paramState.set)}
                   value={paramState.value}
                 />

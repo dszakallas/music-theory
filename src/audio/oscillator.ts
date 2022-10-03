@@ -60,7 +60,8 @@ export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): Instrument => {
     stop(time: number = undefined) {
       const startT = time || ctx.currentTime;
       env.gain.setTargetAtTime(0, startT, releaseDt / 3);
-    }
+    },
+    context: ctx
   };
 };
 
@@ -97,6 +98,7 @@ export function createPoly(ctx: AudioContext, numVoices: number, createOsc, ...a
         voices[voice].onMidi({ pitch: pitch }, time);
       }
       pressedNotes = {};
-    }
+    },
+    context: ctx
   };
 }

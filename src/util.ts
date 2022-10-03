@@ -1,5 +1,3 @@
-import React from 'react';
-
 type InArray<T, X> =
   // See if X is the first element in array T
   T extends readonly [X, ...infer _Rest]
@@ -37,17 +35,6 @@ export type Enum<T> = T extends UniqueArray<infer _> ? AsUnion<T> : never;
 export type EnumValues<T> = T extends UniqueArray<infer _> ? T : never;
 
 export const posMod = (n, m) => (n % m + m) % m;
-
-export const handleChange = (setState, nullable=true) => (e, newValue) => {
-  if (nullable || newValue != null) {
-    setState(newValue);
-  }
-};
-
-export const useState = (s) => {
-  const [value, set] = React.useState(s);
-  return {value, set};
-};
 
 export const noop = () => { // eslint-disable-line: @typescript-eslint/no-empty-function
 };

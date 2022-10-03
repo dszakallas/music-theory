@@ -19,10 +19,9 @@ import Stack from '@mui/material/Stack';
 import Slider from '@mui/material/Slider';
 import { VolumeUp, VolumeDown } from '@mui/icons-material';
 
+import { array, range, map } from './iter';
 
-import {array, range, map} from './iter';
-
-import { createSequencer } from './audio';
+import { createAudioContext, createSequencer } from './audio';
 import { createMasterGain } from './audio/fx';
 import { createPoly, createAdsrOsc, waveformValues } from './audio/oscillator';
 import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, eqTemperedTone, concertPitchFreq, A4 } from './tuning';
@@ -30,13 +29,13 @@ import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, 
 import GenericAudioDevice from './ui/generic_audio_device';
 
 import type { MidiClip } from './audio';
-import { handleChange, useState } from './util';
+import { handleChange, useState } from './ui/util';
 import { createMidiTrack } from './audio/midi_track';
 import TrackLane from './ui/track_lane';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-const audioContext = new AudioContext();
+const audioContext = await createAudioContext();
 
 const master = createMasterGain(audioContext);
 
@@ -291,3 +290,4 @@ const BodyDoc = () => {
 };
 
 root.render(<BodyDoc />);
+

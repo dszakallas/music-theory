@@ -6,7 +6,7 @@ export class Clock {
   _interval: number;
 
   constructor(interval = 25) {
-    this._clock = new Worker(new URL('./clock.worker.ts', import.meta.url));
+    this._clock = new Worker(new URL('./clock.ww.ts', import.meta.url));
     this._cbs = new Map();
     this._clock.onmessage = (e) => {
       if (e.data == 'tick') {
