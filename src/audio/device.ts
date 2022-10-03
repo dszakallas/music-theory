@@ -103,7 +103,8 @@ export const leaderParam = <TT, T> (mkParam: MkParam<TT, T>, defaultValue: T, fo
 export interface AudioDevice {
   name: string
   params: { [name: string]: Param<any, any> },
-  outputs: Array<AudioNode>
+  outputs: Array<AudioNode>,
+  context: AudioContext
 }
 
 export type MidiNote = {

@@ -1,5 +1,5 @@
-let timerID = null;
-let interval = 100;
+timerID = null;
+interval = 100;
 
 self.onmessage = function(e){
   if (e.data == 'start') {

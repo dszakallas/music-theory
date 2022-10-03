@@ -25,7 +25,7 @@ export default function TrackLane(props: { midiTrack: MidiTrack }) {
   const grid = [
     <TrackLaneGain midiTrack={midiTrack} />,
     ...(instrument ? [renderInstrument(instrument)] : [])
-  ].map((dev, i) => (<Grid item xs={4} key={i}>{dev}</Grid>));
+  ].map((dev, i) => (<Grid item key={i}>{dev}</Grid>));
   /* eslint-enable react/jsx-key */
 
   return (

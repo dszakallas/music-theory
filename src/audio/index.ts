@@ -1,8 +1,24 @@
+import { WorkerUrl } from 'worker-url';
 import { Clock } from '../clock';
 import { scales, pitchToFreq } from '../tuning';
 import { booleanParam, Fx, MidiNote } from './device';
 import { opaqueParam, leaderParam } from './device';
 import { MidiTrack } from './midi_track';
+
+export const createAudioContext = async (): Promise<AudioContext> => {
+  const ctx = new AudioContext();
+
+  const modules = [
+    // these have to look exactly like this, e.g we cannot extract the module path
+    // as it will be preprocessed by webpack and replaced with a dynamic resource url.
+    // Just copy-paste the whole thing when you add new modules.
+    new WorkerUrl(new URL('./level.aw.ts', import.meta.url))
+  ];
+
+  await Promise.all(modules.map((m) => ctx.audioWorklet.addModule(m)));
+
+  return ctx;
+};
 
 const sampleAttackRelease = (at, p, rt, s) => {
   const samples = new Array(s);

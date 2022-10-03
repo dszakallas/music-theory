@@ -14,6 +14,7 @@ export const createTrackGain = (ctx: AudioContext) : TrackGain => {
     params: {
       gain: volumeParam(gain.gain),
     },
+    context: ctx
   };
 };
 
@@ -37,5 +38,6 @@ export const createMasterGain = (ctx: AudioContext) : Fx => {
     params: {
       gain: gain.gain,
     },
+    context: ctx,
   };
 };
