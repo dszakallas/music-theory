@@ -1,14 +1,14 @@
 import { Fx, volumeParam, VolumeParam } from './device';
 
-export interface TrackGain extends Fx {
+export interface Mixer extends Fx {
   params: { gain: VolumeParam }
 }
 
-export const createTrackGain = (ctx: AudioContext) : TrackGain => {
+export const createMixer = (ctx: AudioContext) : Mixer => {
   const gain = ctx.createGain();
 
   return {
-    name: 'trackGain',
+    name: 'mixer',
     inputs: [gain],
     outputs: [gain],
     params: {
@@ -19,7 +19,7 @@ export const createTrackGain = (ctx: AudioContext) : TrackGain => {
 };
 
 
-export const createMasterGain = (ctx: AudioContext) : Fx => {
+export const createMasterMixer = (ctx: AudioContext) : Mixer => {
   const compr = ctx.createDynamicsCompressor();
   const gain = ctx.createGain();
 
@@ -32,11 +32,11 @@ export const createMasterGain = (ctx: AudioContext) : Fx => {
   compr.connect(gain);
 
   return {
-    name: 'masterGain',
+    name: 'master_mixer',
     inputs: [compr],
     outputs: [gain],
     params: {
-      gain: gain.gain,
+      gain: volumeParam(gain.gain),
     },
     context: ctx,
   };

@@ -2,18 +2,16 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import React from 'react';
 import { Instrument } from '../audio/device';
-import { MidiTrack } from '../audio/midi_track';
+import { MidiTrack } from '../audio/track';
 import GenericAudioDevice from './generic_audio_device';
-
 
 const renderInstrument = (instrument: Instrument) => {
   return <GenericAudioDevice audioDevice={instrument} />;
 };
 
-
-function TrackLaneGain(props: { midiTrack}) {
+function TrackLaneGain(props: { midiTrack: MidiTrack }) {
   const { midiTrack } = props;
-  return <GenericAudioDevice audioDevice={midiTrack.gain} />;
+  return <GenericAudioDevice audioDevice={midiTrack.mixer} />;
 }
 
 export default function TrackLane(props: { midiTrack: MidiTrack }) {

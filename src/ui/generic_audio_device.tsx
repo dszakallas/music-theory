@@ -5,62 +5,36 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Paper from '@mui/material/Paper';
 import {
   AudioDevice,
-  Param,
-  EnumParamType,
-  OpaqueParamType,
-  BooleanParamType,
-  isOfType,
   VolumeParamType,
 } from '../audio/device';
 
-import React, { useEffect, Dispatch } from 'react';
-import { useState, handleChange } from './util';
+import React from 'react';
+import { handleChange, useParamsState } from './util';
 import LevelMeter from './level_meter';
+import { BooleanParamType, EnumParamType, isOfType, OpaqueParamType } from '../component';
 
 const sliderResolution = 1000;
-
-interface ParamState {
-  value: any;
-  set: Dispatch<any>;
-  effect(): void;
-  param: Param<any, any>;
-}
-
-const paramState = (param: Param<any, any>): ParamState => ({
-  effect() {
-    this.param.value = this.value;
-  },
-  param,
-  ...useState(param.defaultValue),
-});
 
 export default function GenericAudioDevice(props: {
   audioDevice: AudioDevice;
 }) {
   const { audioDevice } = props;
-  const paramStates: Array<[string, ParamState]> = Object.entries(
-    audioDevice.params
-  ).map(([name, param]) => {
-    return [name, paramState(param)];
-  });
 
-  for (const [_name, paramState] of paramStates) {
-    useEffect(paramState.effect.bind(paramState), [paramState.value]);
-  }
+  const params = Object.entries(useParamsState(audioDevice.params));
 
   return (
     <Paper elevation={4}>
       <span>{audioDevice.name}</span>
       <Stack>
-        {paramStates.map(([name, paramState]) => {
-          const { param } = paramState;
+        {params.map(([name, ps]) => {
+          const { param } = ps;
           let comp = null;
           if (isOfType(param, BooleanParamType)) {
             comp = (
               <ToggleButtonGroup
-                value={paramState.value}
+                value={ps.value}
                 exclusive
-                onChange={handleChange(paramState.set, true)}
+                onChange={handleChange(ps.set, true)}
               >
                 <ToggleButton value={true}>{name}</ToggleButton>
               </ToggleButtonGroup>
@@ -68,9 +42,9 @@ export default function GenericAudioDevice(props: {
           } else if (isOfType(param, EnumParamType<[any]>)) {
             comp = (
               <ToggleButtonGroup
-                value={paramState.value}
+                value={ps.value}
                 exclusive
-                onChange={handleChange(paramState.set, false)}
+                onChange={handleChange(ps.set, false)}
               >
                 {param.type.values.map((e, j) => (
                   <ToggleButton key={j} value={e}>
@@ -90,8 +64,8 @@ export default function GenericAudioDevice(props: {
                   max={param.type.maxValue}
                   step={step}
                   orientation="vertical"
-                  onChange={handleChange(paramState.set)}
-                  value={paramState.value}
+                  onChange={handleChange(ps.set)}
+                  value={ps.value}
                 />
                 <span>{param.type.maxValue.toPrecision(3)}</span>
                 <LevelMeter device={audioDevice} />
@@ -109,8 +83,8 @@ export default function GenericAudioDevice(props: {
                   max={param.maxValue}
                   step={step}
                   orientation="vertical"
-                  onChange={handleChange(paramState.set)}
-                  value={paramState.value}
+                  onChange={handleChange(ps.set)}
+                  value={ps.value}
                 />
                 <span>{param.maxValue.toPrecision(3)}</span>
               </React.Fragment>

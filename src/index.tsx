@@ -22,7 +22,6 @@ import { VolumeUp, VolumeDown } from '@mui/icons-material';
 import { array, range, map } from './iter';
 
 import { createAudioContext, createSequencer } from './audio';
-import { createMasterGain } from './audio/fx';
 import { createPoly, createAdsrOsc, waveformValues } from './audio/oscillator';
 import { diffInCents, numSemitones, scales, pitchToFreq, toneNames, pitchNames, eqTemperedTone, concertPitchFreq, A4 } from './tuning';
 
@@ -30,35 +29,14 @@ import GenericAudioDevice from './ui/generic_audio_device';
 
 import type { MidiClip } from './audio';
 import { handleChange, useState } from './ui/util';
-import { createMidiTrack } from './audio/midi_track';
+import { createMidiTrack } from './audio/track';
 import TrackLane from './ui/track_lane';
+import { createMovie } from './audio/movie';
+import { Player } from './ui/player';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 const audioContext = await createAudioContext();
-
-const master = createMasterGain(audioContext);
-
-master.outputs[0].connect(audioContext.destination);
-
-const volumeInput = (event, newValue: number) => {
-  const volume = sliderValueToVolume(newValue);
-  master.params.gain.value = volume;
-};
-
-const maxVol = 1.0;
-const minVol = 0.0;
-const initialVol = 1.0;
-
-const sliderValueToVolume = v => {
-  return minVol + v * (maxVol - minVol);
-};
-
-const volumeToSliderValue = v => {
-  return (v - minVol) / (maxVol - minVol);
-};
-
-master.params.gain.value = initialVol;
 
 type Tuning = {name: string, description: string, tones: Array<number>};
 
@@ -212,40 +190,6 @@ const ToneTableDoc = (props: { baseTone, tuning, refFreq }) => {
   </TableContainer>;
 };
 
-const PlayerDoc = (props: { playing }) => {
-  const { playing } = props;
-
-  return <div>
-    <Stack spacing={2} direction="row" sx={{ mb: 1 }} alignItems="center">
-      <Button onClick={() => handleChange(playing.set)(null, !playing.value)} variant="contained">Play</Button>
-      <VolumeDown />
-      <Slider id="volume" aria-label="Volume" min={0} max={1} step={0.001} onChange={volumeInput} defaultValue={volumeToSliderValue(initialVol)} />
-      <VolumeUp />
-    </Stack>
-  </div>;
-};
-
-
-const InstrumentDoc = (props: {waveform}) => {
-  const { waveform } = props;
-  return <Paper elevation={4}>
-    Oscillator
-    <Stack spacing={2} direction="row">
-      <span>Waveform</span>
-      <ToggleButtonGroup
-        value={waveform.value}
-        exclusive
-        onChange={handleChange(waveform.set)}
-        aria-label="waveform"
-      >
-        {waveformValues.map((e, j) => (
-          <ToggleButton key={j} value={j}>{e}</ToggleButton>
-        ))}
-      </ToggleButtonGroup>
-    </Stack>
-  </Paper>;
-};
-
 const attackDt = 0.06;
 const decayDt = 0.06;
 const sustainVol = 0.01;
@@ -257,19 +201,16 @@ const poly = createPoly(audioContext, oscillatorVoices, createAdsrOsc, {attackDt
 
 const greenSleevesTrack = createMidiTrack(audioContext, poly, greenSleeves);
 
-greenSleevesTrack.outputs[0].connect(master.inputs[0]);
-
 const sequencer = createSequencer(audioContext, 120, greenSleevesTrack);
+
+const movie = createMovie(audioContext, [greenSleevesTrack], sequencer);
+
+movie.masterTrack.mixer.outputs[0].connect(audioContext.destination);
 
 const BodyDoc = () => {
   const tuning = useState(0);
   const refFreq = useState(0);
   const baseTone = useState(0);
-  const playing = useState(false);
-
-  useEffect(() => {
-    playing.value ? sequencer.start() : sequencer.stop();
-  }, [playing]);
 
   useEffect(() => {
     const baseToneFromA = baseTone.value - 9;
@@ -281,7 +222,7 @@ const BodyDoc = () => {
 
   return <div id="body">
     <h1>Music Theory</h1>
-    <PlayerDoc playing={playing}></PlayerDoc>
+    <Player movie={movie}></Player>
     <TrackLane midiTrack={greenSleevesTrack} />
     <GenericAudioDevice audioDevice={poly}></GenericAudioDevice>
     <TuningSystemDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq}/>

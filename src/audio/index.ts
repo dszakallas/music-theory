@@ -1,9 +1,9 @@
 import { WorkerUrl } from 'worker-url';
 import { Clock } from '../clock';
+import { BooleanParam, booleanParam, Component, leaderParam, OpaqueParam, opaqueParam } from '../component';
 import { scales, pitchToFreq } from '../tuning';
-import { booleanParam, Fx, MidiNote } from './device';
-import { opaqueParam, leaderParam } from './device';
-import { MidiTrack } from './midi_track';
+import { MidiNote } from './device';
+import { MidiTrack } from './track';
 
 export const createAudioContext = async (): Promise<AudioContext> => {
   const ctx = new AudioContext();
@@ -67,20 +67,19 @@ const noteIterator = function* (clip: MidiClip, repeat = true) {
 
 export const defaultPitchToFreq = pitchToFreq(scales['12tet']);
 
-export type Sequencer = {
-  start: () => void;
-  stop: () => void;
-  outputs: Array<AudioNode>;
-  setPitchToFreq: any;
+export interface Sequencer extends Component {
+  params: {
+    pitchToFreq: OpaqueParam<(pitch: number) => number>,
+    playing: BooleanParam
+  }
 };
-
 
 // based on the design by Chris Wilson to provide high precision audio scheduling https://github.com/cwilso/metronome
 export const createSequencer = (
   ctx: AudioContext,
   bpm: number,
   midiTrack: MidiTrack
-) => {
+): Sequencer => {
   const { instrument, clip } = midiTrack;
   const lookAhead = 25.0; // how frequently to call scheduler (ms)
   const scheduleAhead = 100.0 / 1000; // how far to schedule ahead (s)
@@ -135,6 +134,7 @@ export const createSequencer = (
   let noteIter = null;
 
   return {
+    name: 'sequencer',
     params: {
       pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, [
         instrument.params.pitchToFreq,
@@ -148,13 +148,7 @@ export const createSequencer = (
         }
       })
     },
-
-    start() {
-      _start();
-    },
-
-    stop() {
-      _stop();
-    },
   };
 };
+
+
