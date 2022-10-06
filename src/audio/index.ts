@@ -1,6 +1,6 @@
 import { WorkerUrl } from 'worker-url';
 import { Clock } from '../clock';
-import { BooleanParam, booleanParam, Component, leaderParam, OpaqueParam, opaqueParam } from '../component';
+import { BooleanParam, booleanParam, Component, FloatParam, floatParam, FloatParamType, leaderParam, OpaqueParam, opaqueParam } from '../component';
 import { scales, pitchToFreq } from '../tuning';
 import { MidiNote } from './device';
 import { MidiTrack } from './track';
@@ -70,14 +70,17 @@ export const defaultPitchToFreq = pitchToFreq(scales['12tet']);
 export interface Sequencer extends Component {
   params: {
     pitchToFreq: OpaqueParam<(pitch: number) => number>,
+    bpm: FloatParam,
     playing: BooleanParam
   }
 };
 
+export const bpmParam = (p: { value: number }) => floatParam(new FloatParamType(1, 999), p);
+
 // based on the design by Chris Wilson to provide high precision audio scheduling https://github.com/cwilso/metronome
 export const createSequencer = (
   ctx: AudioContext,
-  bpm: number,
+  defaultBpm: number,
   midiTrack: MidiTrack
 ): Sequencer => {
   const { instrument, clip } = midiTrack;
@@ -86,26 +89,29 @@ export const createSequencer = (
 
   const clock = new Clock(lookAhead);
 
-  const bps = bpm / 60;
+  const bpm = bpmParam({ value: defaultBpm });
 
   const numMeasures = clip.timeSignature[0];
 
-  const getTimeForPosition = (b, m) => (b * numMeasures + m) / bps;
-
   const schedule = () => {
-    let t = ctx.currentTime;
-    while (t < ctx.currentTime + scheduleAhead) {
+    const bps = bpm.value / 60;
+    const startT = ctx.currentTime;
+    const startB = lastT ? (startT - lastT) * bps + lastB: 0;
+    let t = startT;
+    while (t < startT + scheduleAhead) {
       const { done, value } = noteIter.next('peek');
       if (done) {
         _stop();
         break;
       }
       const [b, m, note] = value;
-      t = getTimeForPosition(b, m) + startTime;
+      const noteB = (b * numMeasures + m);
+      t = (noteB - startB) / bps + startT;
 
       if (t >= ctx.currentTime + scheduleAhead) {
         break;
       }
+      [lastT, lastB] = [t, noteB];
       instrument.onMidi(note, t);
       noteIter.next();
     }
@@ -116,6 +122,7 @@ export const createSequencer = (
       clock.stop();
       clock.removeTickHandler(handle);
       instrument.stop();
+      [lastT, lastB] = [null, null];
       handle = null;
     }
   };
@@ -124,12 +131,11 @@ export const createSequencer = (
     if (!handle) {
       noteIter = noteIterator(clip);
       handle = clock.addTickHandler(schedule);
-      startTime = ctx.currentTime;
       clock.start();
     }
   };
 
-  let startTime = null;
+  let [lastT, lastB] = [null, null];
   let handle = null;
   let noteIter = null;
 
@@ -139,6 +145,7 @@ export const createSequencer = (
       pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, [
         instrument.params.pitchToFreq,
       ]),
+      bpm,
       playing: booleanParam({
         get value() {
           return !!handle;
@@ -150,5 +157,3 @@ export const createSequencer = (
     },
   };
 };
-
-
