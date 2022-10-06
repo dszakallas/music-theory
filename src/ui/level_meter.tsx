@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { AudioDevice } from '../audio/device';
-import { movingRms } from '../audio/level';
+import { movingRms, todBFS } from '../audio/level';
 
 export default function LevelMeter(props: { device: AudioDevice }) {
   const canvasRef = useRef(null);
@@ -17,14 +17,18 @@ export default function LevelMeter(props: { device: AudioDevice }) {
   const t_avg = 50 / 1000; // 50 ms averaging time;
   const sampleRate = analyser.context.sampleRate;
 
-  const tav = 1 - Math.exp(-2.19 / (sampleRate * t_avg));
+  const tav = 1 - Math.exp(-2.19 / (sampleRate * t_avg)); // convert averaging time to feedback factor
+
+  const dbLimit = -120;
 
   const draw = (ctx) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
     analyser.getFloatTimeDomainData(buffer);
 
-    const level = movingRms(buffer, tav, 0);
+    let level = todBFS(movingRms(buffer, tav, 0));
+    level = level < dbLimit ? dbLimit : level;
+    level = 1 - level / dbLimit;
 
     ctx.fillStyle = '#000000';
     ctx.beginPath();

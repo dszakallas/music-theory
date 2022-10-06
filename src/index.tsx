@@ -282,8 +282,8 @@ const ToneTableDoc = (props: { baseTone; tuning; refFreq }) => {
 };
 
 const attackDt = 0.06;
-const decayDt = 0.06;
-const sustainVol = 0.01;
+const decayDt = 0.12;
+const sustainVol = 0.1;
 const peakVol = 1;
 const releaseDt = 0.6;
 const oscillatorVoices = 4;

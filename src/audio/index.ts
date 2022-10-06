@@ -1,6 +1,16 @@
 import { WorkerUrl } from 'worker-url';
 import { Clock } from '../clock';
-import { BooleanParam, booleanParam, Component, FloatParam, floatParam, FloatParamType, leaderParam, OpaqueParam, opaqueParam } from '../component';
+import {
+  BooleanParam,
+  booleanParam,
+  Component,
+  FloatParam,
+  floatParam,
+  FloatParamType,
+  leaderParam,
+  OpaqueParam,
+  opaqueParam,
+} from '../component';
 import { scales, pitchToFreq } from '../tuning';
 import { MidiNote } from './device';
 import { MidiTrack } from './track';
@@ -12,7 +22,7 @@ export const createAudioContext = async (): Promise<AudioContext> => {
     // these have to look exactly like this, e.g we cannot extract the module path
     // as it will be preprocessed by webpack and replaced with a dynamic resource url.
     // Just copy-paste the whole thing when you add new modules.
-    new WorkerUrl(new URL('./level.aw.ts', import.meta.url))
+    new WorkerUrl(new URL('./level.aw.ts', import.meta.url)),
   ];
 
   await Promise.all(modules.map((m) => ctx.audioWorklet.addModule(m)));
@@ -69,13 +79,14 @@ export const defaultPitchToFreq = pitchToFreq(scales['12tet']);
 
 export interface Sequencer extends Component {
   params: {
-    pitchToFreq: OpaqueParam<(pitch: number) => number>,
-    bpm: FloatParam,
-    playing: BooleanParam
-  }
-};
+    pitchToFreq: OpaqueParam<(pitch: number) => number>;
+    bpm: FloatParam;
+    playing: BooleanParam;
+  };
+}
 
-export const bpmParam = (p: { value: number }) => floatParam(new FloatParamType(1, 999), p);
+export const bpmParam = (p: { value: number }) =>
+  floatParam(new FloatParamType(1, 999), p);
 
 // based on the design by Chris Wilson to provide high precision audio scheduling https://github.com/cwilso/metronome
 export const createSequencer = (
@@ -96,7 +107,7 @@ export const createSequencer = (
   const schedule = () => {
     const bps = bpm.value / 60;
     const startT = ctx.currentTime;
-    const startB = lastT ? (startT - lastT) * bps + lastB: 0;
+    const startB = lastT ? (startT - lastT) * bps + lastB : 0;
     let t = startT;
     while (t < startT + scheduleAhead) {
       const { done, value } = noteIter.next('peek');
@@ -105,7 +116,7 @@ export const createSequencer = (
         break;
       }
       const [b, m, note] = value;
-      const noteB = (b * numMeasures + m);
+      const noteB = b * numMeasures + m;
       t = (noteB - startB) / bps + startT;
 
       if (t >= ctx.currentTime + scheduleAhead) {
@@ -152,8 +163,8 @@ export const createSequencer = (
         },
         set value(v) {
           v ? _start() : _stop();
-        }
-      })
+        },
+      }),
     },
   };
 };
