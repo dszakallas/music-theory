@@ -29,7 +29,7 @@
     "@typescript-eslint/parser": "^5.39.0",
     "electron": "^21.3.0",
     "electron-builder": "^23.3.3",
-    "eslint": "^8.22.0",
+    "eslint": "^8.27.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-react": "^7.31.10",
     "rewire": "^6.0.0",
