@@ -27,7 +27,7 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.43.0",
     "@typescript-eslint/parser": "^5.39.0",
-    "electron": "^21.3.0",
+    "electron": "^21.3.1",
     "electron-builder": "^23.3.3",
     "eslint": "^8.22.0",
     "eslint-config-prettier": "^8.5.0",
