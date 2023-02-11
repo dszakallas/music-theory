@@ -65,6 +65,7 @@ export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): Instrument => {
 
     stop(time: number = undefined) {
       const startT = time || ctx.currentTime;
+      env.gain.cancelAndHoldAtTime(startT);
       env.gain.setTargetAtTime(0, startT, releaseDt / 3);
     },
     context: ctx

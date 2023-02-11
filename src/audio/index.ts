@@ -112,7 +112,7 @@ export const createSequencer = (
     while (t < startT + scheduleAhead) {
       const { done, value } = noteIter.next('peek');
       if (done) {
-        _stop();
+        stop();
         break;
       }
       const [b, m, note] = value;
@@ -128,17 +128,16 @@ export const createSequencer = (
     }
   };
 
-  const _stop = () => {
+  const stop = () => {
     if (handle) {
       clock.stop();
-      clock.removeTickHandler(handle);
       instrument.stop();
       [lastT, lastB] = [null, null];
       handle = null;
     }
   };
 
-  const _start = () => {
+  const start = () => {
     if (!handle) {
       noteIter = noteIterator(clip);
       handle = clock.addTickHandler(schedule);
@@ -162,7 +161,7 @@ export const createSequencer = (
           return !!handle;
         },
         set value(v) {
-          v ? _start() : _stop();
+          v ? start() : stop();
         },
       }),
     },
