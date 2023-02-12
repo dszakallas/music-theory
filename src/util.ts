@@ -47,3 +47,5 @@ export function isWritable<T extends Record<string, unknown>>(obj: T, key: keyof
   } while (desc == null && obj != null);
   return Boolean(desc.writable);
 }
+
+export type EmptyObj = Record<string, never>;

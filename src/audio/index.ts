@@ -12,6 +12,7 @@ import {
   opaqueParam,
 } from '../component';
 import { scales, pitchToFreq } from '../tuning';
+import { EmptyObj } from '../util';
 import { MidiNote } from './device';
 import { MidiTrack } from './track';
 
@@ -77,13 +78,12 @@ const noteIterator = function* (clip: MidiClip, repeat = true) {
 
 export const defaultPitchToFreq = pitchToFreq(scales['12tet']);
 
-export interface Sequencer extends Component {
-  params: {
-    pitchToFreq: OpaqueParam<(pitch: number) => number>;
-    bpm: FloatParam;
-    playing: BooleanParam;
-  };
-}
+export type Sequencer = Component<{
+  pitchToFreq: OpaqueParam<(pitch: number) => number>;
+  bpm: FloatParam;
+  playing: BooleanParam;
+}, EmptyObj>;
+
 
 export const bpmParam = (p: { value: number }) =>
   floatParam(new FloatParamType(1, 999), p);
@@ -94,7 +94,8 @@ export const createSequencer = (
   defaultBpm: number,
   midiTrack: MidiTrack
 ): Sequencer => {
-  const { instrument, clip } = midiTrack;
+  const { clip } = midiTrack;
+  const { instrument } = midiTrack.children;
   const lookAhead = 25.0; // how frequently to call scheduler (ms)
   const scheduleAhead = 100.0 / 1000; // how far to schedule ahead (s)
 
@@ -151,6 +152,7 @@ export const createSequencer = (
 
   return {
     name: 'sequencer',
+    children: {},
     params: {
       pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, [
         instrument.params.pitchToFreq,

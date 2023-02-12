@@ -1,25 +1,27 @@
 import type { Mixer } from './fx';
-import type { AudioDevice, Fx, Instrument } from './device';
+import type { Fx, Instrument } from './device';
 import type { MidiClip } from '../audio';
 
 import { createMixer } from './fx';
-import { Component } from '../component';
+import { CMapT, Component, PMapT } from '../component';
+import { EmptyObj } from '../util';
 
-export interface Track extends Component {
-  fx: Array<Fx>;
-  mixer: Mixer;
-}
+export type Track<C extends CMapT> = Component<EmptyObj, {
+  mixer: Mixer,
+  [key: `fx/${string}`]: Fx<any>,
+} & C>;
 
-export interface MidiTrack extends Track {
-  instrument: Instrument;
+export interface MidiTrack extends Track<{
+  instrument: Instrument<any>
+}> {
   clip: MidiClip;
 }
 
-export interface TrackGroup extends Track {
-  child_tracks: Array<Track>;
-}
+export type TrackGroup = Track<{
+  [key: `track/${string}`]: Track<any>
+}>;
 
-export const createMidiTrack = (ctx: AudioContext, instrument: Instrument, clip: MidiClip, mkMixer = createMixer): MidiTrack => {
+export const createMidiTrack = <P extends PMapT> (ctx: AudioContext, instrument: Instrument<P>, clip: MidiClip, mkMixer = createMixer): MidiTrack => {
   const mixer = mkMixer(ctx);
 
   instrument.outputs[0].connect(mixer.inputs[0]);
@@ -27,25 +29,29 @@ export const createMidiTrack = (ctx: AudioContext, instrument: Instrument, clip:
   return {
     name: 'midi_track',
     params: {},
-    instrument,
-    fx: [],
+    children: {
+      mixer,
+      instrument
+    },
     clip,
-    mixer
   };
 };
 
-export const createTrackGroup = (ctx: AudioContext, child_tracks: Array<Track>, mkMixer = createMixer): TrackGroup => {
+export const createTrackGroup = (ctx: AudioContext, child_tracks: Array<Track<any>>, mkMixer = createMixer): TrackGroup => {
   const mixer = mkMixer(ctx);
 
   for (const child_track of child_tracks) {
-    child_track.mixer.outputs[0].connect(mixer.inputs[0]);
+    child_track.children.mixer.outputs[0].connect(mixer.inputs[0]);
   }
 
   return {
     name: 'track_group',
     params: {},
-    fx: [],
-    child_tracks: child_tracks,
-    mixer
+    children: {
+      mixer,
+      ...Object.fromEntries(
+        child_tracks.map((v, i) => [`track/${i}`, v])
+      )
+    },
   };
 };

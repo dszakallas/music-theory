@@ -9,22 +9,22 @@ import {
 } from '../audio/device';
 
 import React from 'react';
-import { handleChange, useParamsState } from './util';
+import { ComponentState, handleChange, useParamsState } from './util';
 import LevelMeter from './level_meter';
 import { BooleanParamType, EnumParamType, isOfType, OpaqueParamType } from '../component';
 
 const sliderResolution = 1000;
 
 export default function GenericAudioDevice(props: {
-  audioDevice: AudioDevice;
+  audioDevice: ComponentState<any, any, AudioDevice<any>>;
 }) {
   const { audioDevice } = props;
 
-  const params = Object.entries(useParamsState(audioDevice.params));
+  const params = Object.entries(audioDevice.params);
 
   return (
     <Paper elevation={4}>
-      <span>{audioDevice.name}</span>
+      <span>{audioDevice.const.name}</span>
       <Stack>
         {params.map(([name, ps]) => {
           const { param } = ps;
@@ -68,7 +68,7 @@ export default function GenericAudioDevice(props: {
                   value={ps.value}
                 />
                 <span>{param.type.maxValue.toPrecision(3)}</span>
-                <LevelMeter device={audioDevice} />
+                <LevelMeter device={audioDevice.const} />
               </React.Fragment>
             );
           } else if (isOfType(param, OpaqueParamType)) {

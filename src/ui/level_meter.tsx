@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { AudioDevice } from '../audio/device';
 import { movingRms, todBFS } from '../audio/level';
 
-export default function LevelMeter(props: { device: AudioDevice }) {
+export default function LevelMeter(props: { device: AudioDevice<any> }) {
   const canvasRef = useRef(null);
 
   const { device } = props;

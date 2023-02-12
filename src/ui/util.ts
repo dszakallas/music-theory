@@ -1,5 +1,5 @@
 import React, { Dispatch, useEffect } from 'react';
-import { Param } from '../component';
+import { CMapT, Component, Param, PMapT } from '../component';
 
 export const handleChange =
   <T>(setState: Dispatch<T>, nullable = true) =>(e, newValue: T) => {
@@ -41,3 +41,27 @@ export const useParamsState = (ps: { [key: string]: Param<any> }) => {
     })
   );
 };
+
+
+export interface ComponentState<
+  P extends PMapT,
+  C extends CMapT,
+  T extends Component<P, C>
+> {
+  const: T
+  children: { [key: string]: ComponentState<any, any, any> }
+  params: { [key: string]: ParamState<any> }
+};
+
+export const useComponentState = <
+  P extends PMapT,
+  C extends CMapT,
+  T extends Component<P, C>
+  >(component: T): ComponentState<P, C, T> => {
+  return {
+    const: component,
+    children: Object.fromEntries(Object.entries(component.children).map(([k, v]) => [k, useComponentState(v)])),
+    params: useParamsState(component.params)
+  };
+};
+

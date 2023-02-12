@@ -23,7 +23,7 @@ export function Player(props: { movie: Movie }) {
 
   const { movie } = props;
   const { playing, bpm } = useParamsState(movie.params);
-  const { gain } = useParamsState(movie.masterTrack.mixer.params);
+  const { gain } = useParamsState(movie.children.masterTrack.children.mixer.params);
 
   const bpmInc = 1.1; // +10%
 

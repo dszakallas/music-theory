@@ -85,7 +85,12 @@ export const leaderParam = <TT, T>(mkParam: MkParam<TT, T>, defaultValue: T, fol
   });
 };
 
-export interface Component {
+export type PMapT = { [name: string]: Param<any>}
+export type CMapT = { [name: string]: Component<any, any> }
+
+
+export interface Component<P extends PMapT, C extends CMapT> {
   name: string;
-  params: { [name: string]: Param<any> },
+  params: P;
+  children: C;
 };

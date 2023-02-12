@@ -1,5 +1,5 @@
 import { range, array, map } from '../iter';
-import { EnumParam, enumParam, EnumParamType, leaderParam, opaqueParam } from '../component';
+import { EnumParam, enumParam, EnumParamType, leaderParam, OpaqueParam, opaqueParam } from '../component';
 import type { MidiNote, Instrument } from './device';
 import { defaultPitchToFreq } from '../audio';
 import type { Enum } from '../util';
@@ -19,7 +19,12 @@ export type Adsr = {
   releaseDt: number
 };
 
-export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): Instrument => {
+export type AdsrOsc = Instrument<{
+  waveform: EnumParam<typeof waveformValues>,
+  pitchToFreq: OpaqueParam<typeof defaultPitchToFreq>
+}>;
+
+export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): AdsrOsc => {
   const { attackDt, releaseDt, peakVol, sustainVol, decayDt } = adsr;
   const osc = ctx.createOscillator();
   const env = ctx.createGain();
@@ -46,6 +51,7 @@ export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): Instrument => {
       pitchToFreq: opaqueParam({ value: defaultPitchToFreq })
     },
     outputs: [env],
+    children: {},
     onMidi(note: MidiNote, time: number = undefined) {
       const { pitch, velocity } = note;
       if (velocity) {
@@ -74,7 +80,7 @@ export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): Instrument => {
 
 const defaultWaveform = 'sine';
 
-export function createPoly(ctx: AudioContext, numVoices: number, createOsc, ...args): Instrument {
+export function createPoly(ctx: AudioContext, numVoices: number, createOsc, ...args): AdsrOsc {
   const voices = array(map(() => createOsc(ctx, ...args), range(numVoices)));
   const gain = ctx.createGain();
   let current = 0;
@@ -89,6 +95,7 @@ export function createPoly(ctx: AudioContext, numVoices: number, createOsc, ...a
       waveform: leaderParam(waveformParam, defaultWaveform, voices.map(v => v.params.waveform))
     },
     outputs: [gain],
+    children: {},
     onMidi(note: MidiNote, time: number = undefined) {
       const { pitch, velocity } = note;
       if (velocity) {

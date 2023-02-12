@@ -38,12 +38,13 @@ import {
 import GenericAudioDevice from './ui/generic_audio_device';
 
 import type { MidiClip } from './audio';
-import { handleChange, useState } from './ui/util';
-import { createMidiTrack } from './audio/track';
+import { handleChange, useState, useComponentState, ComponentState } from './ui/util';
+import { createMidiTrack, MidiTrack } from './audio/track';
 import TrackLane from './ui/track_lane';
 import { createMovie } from './audio/movie';
 import { Player } from './ui/player';
 import { styled, useTheme } from '@mui/material/styles';
+import { AudioDevice } from './audio/device';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -302,7 +303,7 @@ const sequencer = createSequencer(audioContext, 120, greenSleevesTrack);
 
 const movie = createMovie(audioContext, [greenSleevesTrack], sequencer);
 
-movie.masterTrack.mixer.outputs[0].connect(audioContext.destination);
+movie.children.masterTrack.children.mixer.outputs[0].connect(audioContext.destination);
 
 const Widget = styled('div')(({ theme }) => ({
   padding: 16,
@@ -323,6 +324,7 @@ const BodyDoc = () => {
   const refFreq = useState(0);
   const baseTone = useState(0);
 
+
   const mainIconColor = theme.palette.mode === 'dark' ? '#fff' : '#000';
 
   useEffect(() => {
@@ -334,13 +336,15 @@ const BodyDoc = () => {
     sequencer.params.pitchToFreq.value = tones;
   }, [baseTone, refFreq, tuning]);
 
+  const midiTrackComp = useComponentState(movie.children.masterTrack.children['track/0'] as MidiTrack);
+  console.log(midiTrackComp);
   return (
     <div id="body">
       <Widget>
         <Player movie={movie}></Player>
       </Widget>
-      <TrackLane midiTrack={greenSleevesTrack} />
-      <GenericAudioDevice audioDevice={poly}></GenericAudioDevice>
+      <TrackLane midiTrack={midiTrackComp} />
+      <GenericAudioDevice audioDevice={midiTrackComp.children.instrument as ComponentState<any, any, AudioDevice<any>>}></GenericAudioDevice>
       <TuningSystemDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq} />
       <ToneTableDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq} />
     </div>

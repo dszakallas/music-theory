@@ -1,4 +1,5 @@
-import { Component, FloatParamType, typedParam, TypedParam } from '../component';
+import { CMapT, Component, FloatParamType, PMapT, typedParam, TypedParam } from '../component';
+import { EmptyObj } from '../util';
 
 export class VolumeParamType extends FloatParamType {
   constructor() {
@@ -19,7 +20,7 @@ export const volumeParam = (audioParam: AudioParam): VolumeParam => typedParam(v
   }
 });
 
-export interface AudioDevice extends Component {
+export interface AudioDevice<P extends PMapT> extends Component<P, EmptyObj> {
   outputs: Array<AudioNode>,
   context: AudioContext
 }
@@ -29,12 +30,12 @@ export type MidiNote = {
   velocity: number
 };
 
-export interface Instrument extends AudioDevice {
+export interface Instrument<P extends PMapT> extends AudioDevice<P> {
   stop(time: number): void
   stop(): void
   onMidi(note: MidiNote, time: number): void
 }
 
-export interface Fx extends AudioDevice {
+export interface Fx<P extends PMapT> extends AudioDevice<P> {
   inputs: Array<AudioNode>
 }
