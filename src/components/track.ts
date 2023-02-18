@@ -1,12 +1,12 @@
 import type { Mixer } from './fx';
-import type { Fx, Instrument } from './device';
-import type { MidiClip } from '../audio';
+import type { AudioDevice, Fx, Instrument } from './device';
 
 import { createMixer } from './fx';
-import { CMapT, Component, PMapT } from '../component';
+import { ChildrenT, Component, ParamsT } from '../component';
 import { EmptyObj } from '../util';
+import { MidiClip } from './sequencer';
 
-export type Track<C extends CMapT> = Component<EmptyObj, {
+export type Track<C extends ChildrenT> = Component<EmptyObj, {
   mixer: Mixer,
   [key: `fx/${string}`]: Fx<any>,
 } & C>;
@@ -21,17 +21,30 @@ export type TrackGroup = Track<{
   [key: `track/${string}`]: Track<any>
 }>;
 
-export const createMidiTrack = <P extends PMapT> (ctx: AudioContext, instrument: Instrument<P>, clip: MidiClip, mkMixer = createMixer): MidiTrack => {
+export const createMidiTrack = <P extends ParamsT> (
+  ctx: AudioContext,
+  instrument: Instrument<P>,
+  clip: MidiClip,
+  fx: Array<Fx<any>> = [],
+  mkMixer = createMixer,
+): MidiTrack => {
   const mixer = mkMixer(ctx);
 
-  instrument.outputs[0].connect(mixer.inputs[0]);
+  let prevF: AudioDevice<any> = instrument;
+  for (const f of fx) {
+    prevF.outputs[0].connect(f.inputs[0]);
+    prevF = f;
+  }
+
+  prevF.outputs[0].connect(mixer.inputs[0]);
 
   return {
     name: 'midi_track',
     params: {},
     children: {
       mixer,
-      instrument
+      instrument,
+      ...Object.fromEntries(fx.map((v, i) => [`fx/${i}`, v]))
     },
     clip,
   };

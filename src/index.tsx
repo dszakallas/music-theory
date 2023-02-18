@@ -15,36 +15,34 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Slider from '@mui/material/Slider';
-import { VolumeUp, VolumeDown } from '@mui/icons-material';
 
 import { array, range, map } from './iter';
 
-import { createAudioContext, createSequencer } from './audio';
-import { createPoly, createAdsrOsc, waveformValues } from './audio/oscillator';
+import { createAudioContext } from './audio';
+import { createPoly, createAdsrOsc } from './components/oscillator';
 import {
   diffInCents,
   numSemitones,
   scales,
-  pitchToFreq,
   toneNames,
   pitchNames,
   eqTemperedTone,
   concertPitchFreq,
   A4,
-} from './tuning';
+  PitchToFreq,
+} from './audio/tuning';
 
 import GenericAudioDevice from './ui/generic_audio_device';
 
-import type { MidiClip } from './audio';
+import { createSequencer, MidiClip } from './components/sequencer';
 import { handleChange, useState, useComponentState, ComponentState } from './ui/util';
-import { createMidiTrack, MidiTrack } from './audio/track';
 import TrackLane from './ui/track_lane';
-import { createMovie } from './audio/movie';
 import { Player } from './ui/player';
 import { styled, useTheme } from '@mui/material/styles';
-import { AudioDevice } from './audio/device';
+import { createMidiTrack, MidiTrack } from './components/track';
+import { createMovie } from './components/movie';
+import { createFilter } from './components/fx';
+import { AudioDevice } from './components/device';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -221,8 +219,8 @@ const ToneTableDoc = (props: { baseTone; tuning; refFreq }) => {
   const baseToneFromA = baseTone.value - 9;
   const baseFreq = refFreqs[refFreq.value].freq * eqTemperedTone(baseToneFromA);
   const basePitch = A4 + baseToneFromA;
-  const tones = pitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
-  const etTones = pitchToFreq(tunings[0].tones, baseFreq, basePitch);
+  const tones = new PitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
+  const etTones = new PitchToFreq(tunings[0].tones, baseFreq, basePitch);
   const startOctave = 5;
   const startPitch = startOctave * numSemitones + baseTone.value;
 
@@ -264,11 +262,11 @@ const ToneTableDoc = (props: { baseTone; tuning; refFreq }) => {
                     </Button>
                   </TableCell>
                   <TableCell>{pitchNames[(j + baseTone.value) % 12]}</TableCell>
-                  <TableCell>{tones(j + startPitch).toFixed(2)}</TableCell>
+                  <TableCell>{tones.toFreq(j + startPitch).toFixed(2)}</TableCell>
                   <TableCell>
                     {diffInCents(
-                      tones(j + startPitch),
-                      etTones(j + startPitch)
+                      tones.toFreq(j + startPitch),
+                      etTones.toFreq(j + startPitch)
                     ).toFixed(2)}
                   </TableCell>
                 </TableRow>
@@ -297,7 +295,7 @@ const poly = createPoly(audioContext, oscillatorVoices, createAdsrOsc, {
   sustainVol,
 });
 
-const greenSleevesTrack = createMidiTrack(audioContext, poly, greenSleeves);
+const greenSleevesTrack = createMidiTrack(audioContext, poly, greenSleeves, [createFilter(audioContext)]);
 
 const sequencer = createSequencer(audioContext, 120, greenSleevesTrack);
 
@@ -330,14 +328,13 @@ const BodyDoc = () => {
   useEffect(() => {
     const baseToneFromA = baseTone.value - 9;
     const baseFreq =
-      refFreqs[refFreq.value].freq * eqTemperedTone(baseToneFromA);
+        refFreqs[refFreq.value].freq * eqTemperedTone(baseToneFromA);
     const basePitch = A4 + baseToneFromA;
-    const tones = pitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
+    const tones = new PitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
     sequencer.params.pitchToFreq.value = tones;
   }, [baseTone, refFreq, tuning]);
 
   const midiTrackComp = useComponentState(movie.children.masterTrack.children['track/0'] as MidiTrack);
-  console.log(midiTrackComp);
   return (
     <div id="body">
       <Widget>
@@ -352,3 +349,4 @@ const BodyDoc = () => {
 };
 
 root.render(<BodyDoc />);
+

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AudioDevice } from '../audio/device';
+import { AudioDevice } from '../components/device';
 import { movingRms, todBFS } from '../audio/level';
 
 export default function LevelMeter(props: { device: AudioDevice<any> }) {

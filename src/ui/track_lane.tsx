@@ -1,9 +1,9 @@
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import React from 'react';
-import { Instrument } from '../audio/device';
-import { Mixer } from '../audio/fx';
-import { MidiTrack } from '../audio/track';
+import { Instrument } from '../components/device';
+import { Mixer } from '../components/fx';
+import { MidiTrack } from '../components/track';
 import GenericAudioDevice from './generic_audio_device';
 import { ComponentState } from './util';
 
@@ -21,11 +21,12 @@ export default function TrackLane(props: { midiTrack: ComponentState<any, any, M
 
   const { midiTrack } = props;
   const instrument = midiTrack.children.instrument as ComponentState<any, any, Instrument<any>>;
-  console.log(instrument);
+  const fx = Object.entries(midiTrack.children).filter(([key, cs]) => key.startsWith('fx/'));
 
   /* eslint-disable react/jsx-key */
   const grid = [
     <TrackLaneGain midiTrack={midiTrack} />,
+    ...fx.map(([_, v]) => renderInstrument(v)),
     ...(instrument ? [renderInstrument(instrument)] : [])
   ].map((dev, i) => (<Grid item key={i}>{dev}</Grid>));
   /* eslint-enable react/jsx-key */

@@ -1,6 +1,6 @@
-import { bpmParam, Sequencer } from '.';
 import { booleanParam, BooleanParam, Component, FloatParam, leaderParam } from '../component';
 import { createMasterMixer } from './fx';
+import { bpmParam, Sequencer } from './sequencer';
 import { createTrackGroup, Track, TrackGroup } from './track';
 
 export type Movie = Component<

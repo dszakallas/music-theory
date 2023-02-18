@@ -1,15 +1,15 @@
 import { range, array, map } from '../iter';
 import { EnumParam, enumParam, EnumParamType, leaderParam, OpaqueParam, opaqueParam } from '../component';
 import type { MidiNote, Instrument } from './device';
-import { defaultPitchToFreq } from '../audio';
 import type { Enum } from '../util';
+import { defaultPitchToFreq } from '../audio/tuning';
 
 const timeToSteal = 0.01;
 
 export const waveformValues = ['sine', 'sawtooth', 'square', 'triangle'] as const;
 export const waveformParamType: EnumParamType<typeof waveformValues> = new EnumParamType(waveformValues);
 
-export const waveformParam: (props: { value: Enum<typeof waveformValues> }) => EnumParam<typeof waveformValues> = (props) => enumParam(waveformParamType, props);
+export const waveformParam = (props: { value: Enum<typeof waveformValues> }): EnumParam<typeof waveformValues> => enumParam(waveformParamType, props);
 
 export type Adsr = {
   attackDt: number,
@@ -23,6 +23,22 @@ export type AdsrOsc = Instrument<{
   waveform: EnumParam<typeof waveformValues>,
   pitchToFreq: OpaqueParam<typeof defaultPitchToFreq>
 }>;
+
+const sampleAttackRelease = (at, p, rt, s) => {
+  const samples = new Array(s);
+  const t = at + rt;
+  const ds = t / (s - 1);
+  const peakS = Math.floor(at / ds);
+  for (let i = 0; i < peakS; ++i) {
+    samples[i] = p * ((ds * i) / at);
+  }
+  const rOff = at - ds * peakS;
+
+  for (let i = 0; i < samples.length - peakS; ++i) {
+    samples[i + peakS] = Math.min(p, p * (1 - (ds * i - rOff) / rt));
+  }
+  return samples;
+};
 
 export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): AdsrOsc => {
   const { attackDt, releaseDt, peakVol, sustainVol, decayDt } = adsr;
@@ -59,7 +75,7 @@ export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): AdsrOsc => {
         env.gain.cancelAndHoldAtTime(startT);
         startT += timeToSteal;
         env.gain.setTargetAtTime(0, startT, timeToSteal / 3);
-        const freq = this.params.pitchToFreq.value(pitch);
+        const freq = this.params.pitchToFreq.value.toFreq(pitch);
         osc.frequency.setValueAtTime(freq, startT);
         const attackT = startT + attackDt;
         env.gain.setTargetAtTime(peakVol, startT, decayDt / 3);

@@ -6,7 +6,7 @@ import Paper from '@mui/material/Paper';
 import {
   AudioDevice,
   VolumeParamType,
-} from '../audio/device';
+} from '../components/device';
 
 import React from 'react';
 import { ComponentState, handleChange, useParamsState } from './util';
@@ -90,7 +90,7 @@ export default function GenericAudioDevice(props: {
               </React.Fragment>
             );
           } else {
-            throw Error('Should not happen!');
+            throw Error('Unhandled param');
           }
           return (
             <Stack spacing={2} direction="row" key={name}>

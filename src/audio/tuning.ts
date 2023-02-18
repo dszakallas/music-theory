@@ -1,5 +1,5 @@
-import {array, range, map, iter, zip} from './iter';
-import {posMod} from './util';
+import {array, range, map, iter, zip} from '../iter';
+import {posMod} from '../math';
 
 export const numSemitones = 12;
 
@@ -27,9 +27,7 @@ export const toneNames = [
   'Major seventh'
 ];
 
-export const pitchNames = [
-  'C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'
-];
+export const pitchNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'];
 
 const primes = [2, 3, 5, 7, 11, 13, 17];
 
@@ -59,10 +57,23 @@ export const scales = Object.fromEntries([
 export const concertPitchFreq = 440;
 export const A4 = 69; // MIDI number
 
-export const pitchToFreq = (scale, referenceFreq = concertPitchFreq, referencePitch = A4) => (pitch) => {
-  const p = pitch - referencePitch;
-  const power = Math.floor(p / numSemitones);
-  const tone = scale[posMod(p, numSemitones)];
-  return referenceFreq * tone * (2 ** power);
+export class PitchToFreq {
+  scale: Array<number>;
+  referenceFreq: number;
+  referencePitch: number;
+
+  constructor(scale, referenceFreq, referencePitch) {
+    this.scale = scale;
+    this.referenceFreq = referenceFreq;
+    this.referencePitch = referencePitch; 
+  }
+
+  toFreq(pitch: number): number {
+    const p = pitch - this.referencePitch;
+    const power = Math.floor(p / numSemitones);
+    const tone = this.scale[posMod(p, numSemitones)];
+    return this.referenceFreq * tone * (2 ** power);
+  } 
 };
 
+export const defaultPitchToFreq = new PitchToFreq(scales['12tet'], concertPitchFreq, A4);

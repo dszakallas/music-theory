@@ -34,8 +34,6 @@ export type AsUnion<T> =
 export type Enum<T> = T extends UniqueArray<infer _> ? AsUnion<T> : never;
 export type EnumValues<T> = T extends UniqueArray<infer _> ? T : never;
 
-export const posMod = (n: number, m: number) => (n % m + m) % m;
-
 export const noop = () => { // eslint-disable-line: @typescript-eslint/no-empty-function
 };
 
