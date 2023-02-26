@@ -1,8 +1,9 @@
 import { range, array, map } from '../iter';
-import { EnumParam, enumParam, EnumParamType, leaderParam, OpaqueParam, opaqueParam } from '../component';
+import { EnumParam, enumParam, EnumParamType, leaderParam } from '../component';
 import type { MidiNote, Instrument } from './device';
 import type { Enum } from '../util';
 import { defaultPitchToFreq } from '../audio/tuning';
+import { pitchToFreqParam, PitchToFreqParam } from './tuning';
 
 const timeToSteal = 0.01;
 
@@ -21,7 +22,7 @@ export type Adsr = {
 
 export type AdsrOsc = Instrument<{
   waveform: EnumParam<typeof waveformValues>,
-  pitchToFreq: OpaqueParam<typeof defaultPitchToFreq>
+  pitchToFreq: PitchToFreqParam
 }>;
 
 const sampleAttackRelease = (at, p, rt, s) => {
@@ -64,7 +65,7 @@ export const createAdsrOsc = (ctx: AudioContext, adsr: Adsr): AdsrOsc => {
           osc.type = v;
         }
       }),
-      pitchToFreq: opaqueParam({ value: defaultPitchToFreq })
+      pitchToFreq: pitchToFreqParam({ value: defaultPitchToFreq })
     },
     outputs: [env],
     children: {},
@@ -107,7 +108,7 @@ export function createPoly(ctx: AudioContext, numVoices: number, createOsc, ...a
   return {
     name: 'poly',
     params: {
-      pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, voices.map(v => v.params.pitchToFreq)),
+      pitchToFreq: leaderParam(pitchToFreqParam, defaultPitchToFreq, voices.map(v => v.params.pitchToFreq)),
       waveform: leaderParam(waveformParam, defaultWaveform, voices.map(v => v.params.waveform))
     },
     outputs: [gain],

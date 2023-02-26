@@ -8,12 +8,11 @@ import {
   FloatParam,
   FloatParamType,
   leaderParam,
-  opaqueParam,
-  OpaqueParam,
 } from '../component';
 import { EmptyObj } from '../util';
 import { MidiNote } from './device';
 import { MidiTrack } from './track';
+import { pitchToFreqParam, PitchToFreqParam } from './tuning';
 
 export type Beat = number;
 
@@ -46,7 +45,7 @@ const noteIterator = function* (clip: MidiClip, repeat = true) {
 
 export type Sequencer = Component<
   {
-    pitchToFreq: OpaqueParam<PitchToFreq>;
+    pitchToFreq: PitchToFreqParam;
     bpm: FloatParam;
     playing: BooleanParam;
   },
@@ -122,7 +121,7 @@ export const createSequencer = (
     name: 'sequencer',
     children: {},
     params: {
-      pitchToFreq: leaderParam(opaqueParam, defaultPitchToFreq, [
+      pitchToFreq: leaderParam(pitchToFreqParam, defaultPitchToFreq, [
         instrument.params.pitchToFreq,
       ]),
       bpm,

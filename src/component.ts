@@ -47,12 +47,8 @@ export class FloatParamType {
   }
 }
 
-// Opaque params are an escape hatch for params we don't want to be controlled
-// through a generic interface.
-export class OpaqueParamType {}
-export type OpaqueParam<T> = TypedParam<OpaqueParamType, T>;
-const opaqueParamType = new OpaqueParamType();
-export const opaqueParam = <T>(props: { value: T }): OpaqueParam<T> => typedParam(opaqueParamType, props);
+// Extend CustomParamType to provide your own param type
+export class CustomParamType {}
 
 // A param (leader) that controls other parameters (followers). Followers must be of the same type.
 export const leaderParam = <TT, T>(mkParam: MkParam<TT, T>, defaultValue: T, followers: Array<Param<T>>): TypedParam<TT, T> => {
@@ -80,6 +76,7 @@ export type ParamsT = { [name: string]: Param<any> }
 export type ChildrenT = { [name: string]: Component<any, any> }
 
 export interface Component<P extends ParamsT, C extends ChildrenT> {
+  friendlyName?: string;
   name: string;
   params: P;
   children: C;

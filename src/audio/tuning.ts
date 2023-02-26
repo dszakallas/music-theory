@@ -12,23 +12,6 @@ const primeComponents = {
   '7l': [[], [-1, 1, 1, -1], [3, 0, 0, -1], [1, 1, -1], [-2, 0, 1], [2, -1], [1, 0, 1, -1], [-1, 1], [3, 0, -1], [0, -1, 1], [-2, 0, 0, 1], [-3, 1, 1]]
 };
 
-export const toneNames = [
-  'Unison',
-  'Minor second',
-  'Major second',
-  'Minor third',
-  'Major third',
-  'Perfect fourth',
-  'Tritone',
-  'Perfect fifth',
-  'Minor sixth',
-  'Major sixth',
-  'Minor seventh',
-  'Major seventh'
-];
-
-export const pitchNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'];
-
 const primes = [2, 3, 5, 7, 11, 13, 17];
 
 const primeTone = (tones) => (i) => {

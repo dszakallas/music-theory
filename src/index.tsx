@@ -5,64 +5,27 @@ import '@fontsource/roboto/700.css';
 
 import ReactDOM from 'react-dom/client';
 import React, { useEffect } from 'react';
-import Button from '@mui/material/Button';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
 
 import { array, range, map } from './iter';
 
 import { createAudioContext } from './audio';
 import { createPoly, createAdsrOsc } from './components/oscillator';
-import {
-  diffInCents,
-  numSemitones,
-  scales,
-  toneNames,
-  pitchNames,
-  eqTemperedTone,
-  concertPitchFreq,
-  A4,
-  PitchToFreq,
-} from './audio/tuning';
-
-import GenericAudioDevice from './ui/generic_audio_device';
+import { A4 } from './audio/tuning';
 
 import { createSequencer, MidiClip } from './components/sequencer';
-import { handleChange, useState, useComponentState, ComponentState } from './ui/util';
+import { useState, useComponentState } from './ui/util';
 import TrackLane from './ui/track_lane';
 import { Player } from './ui/player';
 import { styled, useTheme } from '@mui/material/styles';
 import { createMidiTrack, MidiTrack } from './components/track';
 import { createMovie } from './components/movie';
 import { createFilter } from './components/fx';
-import { AudioDevice } from './components/device';
+import MainWindow, { useViewState } from './ui/view';
+import Stack from '@mui/material/Stack';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 const audioContext = await createAudioContext();
-
-type Tuning = { name: string; description: string; tones: Array<number> };
-
-const tunings: Array<Tuning> = [
-  { name: '12-TET', description: '', tones: scales['12tet'] },
-  { name: 'Pythagorean', description: '', tones: scales['pythagorean'] },
-  { name: '5-limit symmetric No.1', description: '', tones: scales['5ls1'] },
-  { name: '5-limit symmetric No.2', description: '', tones: scales['5ls2'] },
-  { name: '5-limit asymmetric', description: '', tones: scales['5la'] },
-  { name: '7-limit', description: '', tones: scales['7l'] },
-];
-
-const refFreqs = [
-  { name: '440 Hz (concert pitch)', freq: concertPitchFreq },
-  { name: '432 Hz', freq: 432 },
-];
 
 const [
   E,
@@ -113,7 +76,7 @@ const convertNotes = (notes) =>
   });
 
 const greenSleeves: MidiClip = {
-  timeSignature: [6, 3], // 6/8 where
+  timeSignature: [6, 3], // 6/8
   offset: 0,
   notes: convertNotes([
     [
@@ -161,125 +124,6 @@ const greenSleeves: MidiClip = {
   ]),
 };
 
-const TuningSystemDoc = (props: { baseTone; tuning; refFreq }) => {
-  const { baseTone, tuning, refFreq } = props;
-  return (
-    <div>
-      <div>
-        Tonic root:
-        <ToggleButtonGroup
-          value={baseTone.value}
-          exclusive
-          onChange={handleChange(baseTone.set, false)}
-          aria-label="baseTone"
-        >
-          {pitchNames.map((e, j) => (
-            <ToggleButton key={j} value={j}>
-              {e}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </div>
-      <div>
-        Reference frequency for A:
-        <ToggleButtonGroup
-          value={refFreq.value}
-          exclusive
-          onChange={handleChange(refFreq.set, false)}
-          aria-label="reference frequency"
-        >
-          {refFreqs.map((e, j) => (
-            <ToggleButton key={j} value={j}>
-              {e.name}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </div>
-      <div>
-        Tuning system:
-        <ToggleButtonGroup
-          value={tuning.value}
-          exclusive
-          onChange={handleChange(tuning.set, false)}
-          aria-label="baseTone"
-        >
-          {tunings.map((e, j) => (
-            <ToggleButton key={j} value={j}>
-              {e.name}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </div>
-    </div>
-  );
-};
-
-const ToneTableDoc = (props: { baseTone; tuning; refFreq }) => {
-  const { baseTone, tuning, refFreq } = props;
-  const baseToneFromA = baseTone.value - 9;
-  const baseFreq = refFreqs[refFreq.value].freq * eqTemperedTone(baseToneFromA);
-  const basePitch = A4 + baseToneFromA;
-  const tones = new PitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
-  const etTones = new PitchToFreq(tunings[0].tones, baseFreq, basePitch);
-  const startOctave = 5;
-  const startPitch = startOctave * numSemitones + baseTone.value;
-
-  return (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell></TableCell>
-            <TableCell>Pitch</TableCell>
-            <TableCell>Frequency (Hz)</TableCell>
-            <TableCell>Cents from 12-TET</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {array(
-            map(
-              (j) => (
-                <TableRow key={j}>
-                  <TableCell>
-                    <Button
-                      key={j}
-                      id={`note-${j}`}
-                      role="switch"
-                      variant="contained"
-                      onClick={() => {
-                        const now = audioContext.currentTime;
-                        poly.onMidi(
-                          { pitch: j + startPitch, velocity: 127 },
-                          now
-                        );
-                        poly.onMidi(
-                          { pitch: j + startPitch, velocity: 0 },
-                          now + 0.1
-                        );
-                      }}
-                    >
-                      {toneNames[j]}
-                    </Button>
-                  </TableCell>
-                  <TableCell>{pitchNames[(j + baseTone.value) % 12]}</TableCell>
-                  <TableCell>{tones.toFreq(j + startPitch).toFixed(2)}</TableCell>
-                  <TableCell>
-                    {diffInCents(
-                      tones.toFreq(j + startPitch),
-                      etTones.toFreq(j + startPitch)
-                    ).toFixed(2)}
-                  </TableCell>
-                </TableRow>
-              ),
-              range(numSemitones)
-            )
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-};
-
 const attackDt = 0.06;
 const decayDt = 0.12;
 const sustainVol = 0.1;
@@ -295,13 +139,17 @@ const poly = createPoly(audioContext, oscillatorVoices, createAdsrOsc, {
   sustainVol,
 });
 
-const greenSleevesTrack = createMidiTrack(audioContext, poly, greenSleeves, [createFilter(audioContext)]);
+const greenSleevesTrack = createMidiTrack(audioContext, poly, greenSleeves, [
+  createFilter(audioContext),
+]);
 
 const sequencer = createSequencer(audioContext, 120, greenSleevesTrack);
 
 const movie = createMovie(audioContext, [greenSleevesTrack], sequencer);
 
-movie.children.masterTrack.children.mixer.outputs[0].connect(audioContext.destination);
+movie.children.masterTrack.children.mixer.outputs[0].connect(
+  audioContext.destination
+);
 
 const Widget = styled('div')(({ theme }) => ({
   padding: 16,
@@ -316,37 +164,28 @@ const Widget = styled('div')(({ theme }) => ({
   backdropFilter: 'blur(40px)',
 }));
 
-const BodyDoc = () => {
+function TrackChooser(props: any) {
+  return <input type="file" />;
+}
+
+const Root = () => {
   const theme = useTheme();
-  const tuning = useState(0);
-  const refFreq = useState(0);
-  const baseTone = useState(0);
 
+  const view = useViewState();
 
-  const mainIconColor = theme.palette.mode === 'dark' ? '#fff' : '#000';
-
-  useEffect(() => {
-    const baseToneFromA = baseTone.value - 9;
-    const baseFreq =
-        refFreqs[refFreq.value].freq * eqTemperedTone(baseToneFromA);
-    const basePitch = A4 + baseToneFromA;
-    const tones = new PitchToFreq(tunings[tuning.value].tones, baseFreq, basePitch);
-    sequencer.params.pitchToFreq.value = tones;
-  }, [baseTone, refFreq, tuning]);
-
-  const midiTrackComp = useComponentState(movie.children.masterTrack.children['track/0'] as MidiTrack);
+  const midiTrackComp = useComponentState(
+    movie.children.masterTrack.children['track/0'] as MidiTrack
+  );
   return (
-    <div id="body">
+    <Stack id="body" spacing={2}>
       <Widget>
         <Player movie={movie}></Player>
       </Widget>
-      <TrackLane midiTrack={midiTrackComp} />
-      <GenericAudioDevice audioDevice={midiTrackComp.children.instrument as ComponentState<any, any, AudioDevice<any>>}></GenericAudioDevice>
-      <TuningSystemDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq} />
-      <ToneTableDoc tuning={tuning} baseTone={baseTone} refFreq={refFreq} />
-    </div>
+      <TrackChooser />
+      <TrackLane midiTrack={midiTrackComp} view={view} />
+      <MainWindow view={view} />
+    </Stack>
   );
 };
 
-root.render(<BodyDoc />);
-
+root.render(<Root />);

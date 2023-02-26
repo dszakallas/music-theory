@@ -3,24 +3,47 @@ import Slider from '@mui/material/Slider';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Paper from '@mui/material/Paper';
-import {
-  AudioDevice,
-  VolumeParamType,
-} from '../components/device';
+import { AudioDevice, VolumeParamType } from '../components/device';
 
 import React from 'react';
-import { ComponentState, handleChange, useParamsState } from './util';
+import { ComponentState, handleChange, ParamState, State, useParamsState } from './util';
 import LevelMeter from './level_meter';
-import { BooleanParamType, EnumParamType, isOfType, OpaqueParamType } from '../component';
+import {
+  BooleanParamType,
+  EnumParamType,
+  isOfType,
+  Param,
+  TypedParam,
+} from '../component';
+import Button from '@mui/material/Button';
+import { PitchToFreq } from '../audio/tuning';
+import { TuningSystem } from './tuning';
+import { ViewState } from './view';
 
 const sliderResolution = 1000;
 
+// make it a registry
+const getConfigurationView = (ts: ParamState<any>) => {
+  if (isOfType(ts.param, PitchToFreq.constructor as typeof PitchToFreq)) {
+    return (
+      <TuningSystem pitchToFreq={ts}></TuningSystem>
+    );
+  }
+
+  return;
+};
+
 export default function GenericAudioDevice(props: {
   audioDevice: ComponentState<any, any, AudioDevice<any>>;
+  view: ViewState;
 }) {
-  const { audioDevice } = props;
+  const { audioDevice, view } = props;
 
   const params = Object.entries(audioDevice.params);
+
+  const openInMainWindow = (mainWindow) => {
+    view.mainWindow.set(mainWindow);
+  };
 
   return (
     <Paper elevation={4}>
@@ -71,8 +94,6 @@ export default function GenericAudioDevice(props: {
                 <LevelMeter device={audioDevice.const} />
               </React.Fragment>
             );
-          } else if (isOfType(param, OpaqueParamType)) {
-            comp = <span>{param.toString()}</span>;
           } else if (param instanceof AudioParam) {
             const step = (param.maxValue - param.minValue) / sliderResolution;
             comp = (
@@ -90,7 +111,16 @@ export default function GenericAudioDevice(props: {
               </React.Fragment>
             );
           } else {
-            throw Error('Unhandled param');
+            const mainWindow = getConfigurationView(ps);
+            if (mainWindow) {
+              comp = (
+                <Button onClick={() => openInMainWindow(mainWindow)}>
+                  Open
+                </Button>
+              );
+            } else {
+              comp = <span>{param.toString()}</span>;
+            }
           }
           return (
             <Stack spacing={2} direction="row" key={name}>
