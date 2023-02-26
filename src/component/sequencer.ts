@@ -8,7 +8,7 @@ import {
   FloatParam,
   FloatParamType,
   leaderParam,
-} from '../component';
+} from '.';
 import { EmptyObj } from '../util';
 import { MidiNote } from './device';
 import { MidiTrack } from './track';

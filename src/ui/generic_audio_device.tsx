@@ -3,22 +3,16 @@ import Slider from '@mui/material/Slider';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Paper from '@mui/material/Paper';
-import { AudioDevice, VolumeParamType } from '../components/device';
+import { AudioDevice, VolumeParamType } from '../component/device';
 
 import React from 'react';
 import { ComponentState, handleChange, ParamState, State, useParamsState } from './util';
 import LevelMeter from './level_meter';
-import {
-  BooleanParamType,
-  EnumParamType,
-  isOfType,
-  Param,
-  TypedParam,
-} from '../component';
 import Button from '@mui/material/Button';
 import { PitchToFreq } from '../audio/tuning';
 import { TuningSystem } from './tuning';
 import { ViewState } from './view';
+import { BooleanParamType, EnumParamType, isOfType } from '../component';
 
 const sliderResolution = 1000;
 

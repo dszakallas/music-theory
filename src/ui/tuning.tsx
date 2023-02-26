@@ -10,9 +10,8 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import React, { useEffect } from 'react';
 import { A4, concertPitchFreq, diffInCents, eqTemperedTone, numSemitones, PitchToFreq, scales } from '../audio/tuning';
-import { Instrument } from '../components/device';
-import { createAdsrOsc, createPoly } from '../components/oscillator';
-import { PitchToFreqParam } from '../components/tuning';
+import { Instrument } from '../component/device';
+import { createAdsrOsc, createPoly } from '../component/oscillator';
 import { array, map, range } from '../iter';
 import { handleChange, ParamState, useState } from './util';
 

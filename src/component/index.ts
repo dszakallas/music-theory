@@ -1,4 +1,4 @@
-import type { Enum, EnumValues } from './util';
+import type { Enum, EnumValues } from '../util';
 
 export interface Param<T> {
   value: T

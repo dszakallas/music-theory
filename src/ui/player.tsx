@@ -12,7 +12,7 @@ import Stack from '@mui/material/Stack';
 import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import React from 'react';
-import { Movie } from '../components/movie';
+import { Movie } from '../component/movie';
 import { handleChange, useParamsState } from './util';
 
 export function Player(props: { movie: Movie }) {

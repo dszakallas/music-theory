@@ -2,7 +2,7 @@ import type { Mixer } from './fx';
 import type { AudioDevice, Fx, Instrument } from './device';
 
 import { createMixer } from './fx';
-import { ChildrenT, Component, ParamsT } from '../component';
+import { ChildrenT, Component, ParamsT } from '.';
 import { EmptyObj } from '../util';
 import { MidiClip } from './sequencer';
 

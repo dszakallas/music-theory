@@ -1,5 +1,5 @@
 import { range, array, map } from '../iter';
-import { EnumParam, enumParam, EnumParamType, leaderParam } from '../component';
+import { EnumParam, enumParam, EnumParamType, leaderParam } from '.';
 import type { MidiNote, Instrument } from './device';
 import type { Enum } from '../util';
 import { defaultPitchToFreq } from '../audio/tuning';

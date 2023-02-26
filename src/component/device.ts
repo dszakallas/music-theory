@@ -1,4 +1,4 @@
-import { Component, FloatParamType, ParamsT, typedParam, TypedParam } from '../component';
+import { Component, FloatParamType, ParamsT, typedParam, TypedParam } from '.';
 import { EmptyObj } from '../util';
 
 export class VolumeParamType extends FloatParamType {

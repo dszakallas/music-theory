@@ -7,7 +7,7 @@ import {
   FloatParam,
   leaderParam,
   TypedParam,
-} from '../component';
+} from '.';
 import { createMasterMixer } from './fx';
 import { bpmParam, Sequencer } from './sequencer';
 import { createTrackGroup, Track, TrackGroup } from './track';

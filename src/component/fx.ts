@@ -1,4 +1,4 @@
-import { enumParam, EnumParam, EnumParamType } from '../component';
+import { enumParam, EnumParam, EnumParamType } from '.';
 import { Enum } from '../util';
 import { Fx, volumeParam, VolumeParam } from './device';
 

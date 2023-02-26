@@ -4,22 +4,22 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
 import ReactDOM from 'react-dom/client';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import { array, range, map } from './iter';
 
 import { createAudioContext } from './audio';
-import { createPoly, createAdsrOsc } from './components/oscillator';
+import { createPoly, createAdsrOsc } from './component/oscillator';
 import { A4 } from './audio/tuning';
 
-import { createSequencer, MidiClip } from './components/sequencer';
-import { useState, useComponentState } from './ui/util';
+import { createSequencer, MidiClip } from './component/sequencer';
+import { useComponentState } from './ui/util';
 import TrackLane from './ui/track_lane';
 import { Player } from './ui/player';
 import { styled, useTheme } from '@mui/material/styles';
-import { createMidiTrack, MidiTrack } from './components/track';
-import { createMovie } from './components/movie';
-import { createFilter } from './components/fx';
+import { createMidiTrack, MidiTrack } from './component/track';
+import { createMovie } from './component/movie';
+import { createFilter } from './component/fx';
 import MainWindow, { useViewState } from './ui/view';
 import Stack from '@mui/material/Stack';
 

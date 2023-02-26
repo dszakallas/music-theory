@@ -1,5 +1,5 @@
 import { defaultPitchToFreq, PitchToFreq } from '../audio/tuning';
-import { Component, typedParam, TypedParam } from '../component';
+import { Component, typedParam, TypedParam } from '.';
 import { EmptyObj } from '../util';
 
 export type PitchToFreqParam = TypedParam<typeof PitchToFreq, PitchToFreq>;
