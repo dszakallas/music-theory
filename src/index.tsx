@@ -16,12 +16,21 @@ import { createSequencer, MidiClip } from './component/sequencer';
 import { useComponentState } from './ui/util';
 import TrackLane from './ui/track_lane';
 import { Player } from './ui/player';
-import { styled, useTheme } from '@mui/material/styles';
 import { createMidiTrack, MidiTrack } from './component/track';
 import { createMovie } from './component/movie';
 import { createFilter } from './component/fx';
 import MainWindow, { useViewState } from './ui/view';
-import Stack from '@mui/material/Stack';
+import Grid from '@mui/material/Grid';
+
+import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
+
+import CssBaseline from '@mui/material/CssBaseline';
+
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -169,22 +178,28 @@ function TrackChooser(props: any) {
 }
 
 const Root = () => {
-  const theme = useTheme();
-
   const view = useViewState();
 
   const midiTrackComp = useComponentState(
     movie.children.masterTrack.children['track/0'] as MidiTrack
   );
   return (
-    <Stack id="body" spacing={2}>
-      <Widget>
-        <Player movie={movie}></Player>
-      </Widget>
-      <TrackChooser />
-      <TrackLane midiTrack={midiTrackComp} view={view} />
-      <MainWindow view={view} />
-    </Stack>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Grid container direction="column" id="body" spacing={2}>
+        <Grid item>
+          <Widget>
+            <Player movie={movie}></Player>
+          </Widget>
+        </Grid>
+        <Grid item>
+          <MainWindow view={view} />
+        </Grid>
+        <Grid item>
+          <TrackLane midiTrack={midiTrackComp} view={view} />
+        </Grid>
+      </Grid>
+    </ThemeProvider>
   );
 };
 

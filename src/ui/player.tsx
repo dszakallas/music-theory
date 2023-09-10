@@ -71,7 +71,7 @@ export function Player(props: { movie: Movie }) {
           }}
         />
         <VolumeUp htmlColor={lightIconColor} />
-        <Typography>{`${bpm.value.toPrecision(5)} BPM`}</Typography>
+        <Typography color={mainIconColor}>{`${bpm.value.toPrecision(5)} BPM`}</Typography>
 
         <ButtonGroup
           size="small"

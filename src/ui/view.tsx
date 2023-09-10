@@ -15,7 +15,7 @@ export const useViewState = (): ViewState => {
   };
 };
 
-export default function MainWindow(props: {view: ViewState}) {
-  const { view } = props; 
-  return <Paper>{view.mainWindow.value}</Paper>; 
+export default function MainWindow(props: {view: ViewState, style?: React.CSSProperties}) {
+  const { view, style } = props; 
+  return <Paper style={style}>{view.mainWindow.value}</Paper>; 
 }

@@ -1,9 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { AudioDevice } from '../component/device';
 import { movingRms, todBFS } from '../audio/level';
+import { useTheme } from '@mui/material/styles';
 
 export default function LevelMeter(props: { device: AudioDevice<any> }) {
   const canvasRef = useRef(null);
+  const theme = useTheme();
+
+  const mainColor = theme.palette.mode === 'dark' ? '#fff' : '#000';
 
   const { device } = props;
 
@@ -30,7 +34,7 @@ export default function LevelMeter(props: { device: AudioDevice<any> }) {
     level = level < dbLimit ? dbLimit : level;
     level = 1 - level / dbLimit;
 
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = mainColor;
     ctx.beginPath();
     ctx.rect(
       0,

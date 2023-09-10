@@ -29,9 +29,13 @@ function DevicePane(props: any) {
   );
 }
 
-export default function TrackLane(props: { midiTrack: ComponentState<any, any, MidiTrack>, view: ViewState }) {
+export default function TrackLane(props: {
+  midiTrack: ComponentState<any, any, MidiTrack>,
+  view: ViewState
+  style?: React.CSSProperties
+}) {
 
-  const { midiTrack, view } = props;
+  const { midiTrack, view, style } = props;
   const instrument = midiTrack.children.instrument as ComponentState<any, any, Instrument<any>>;
   const fx = Object.entries(midiTrack.children).filter(([key, cs]) => key.startsWith('fx/'));
 
@@ -55,7 +59,7 @@ export default function TrackLane(props: { midiTrack: ComponentState<any, any, M
   /* eslint-enable react/jsx-key */
 
   return (
-    <Paper elevation={4}>
+    <Paper elevation={4} style={style}>
       <div>
         Track name
       </div>
