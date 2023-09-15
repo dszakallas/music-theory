@@ -30,7 +30,7 @@
     "electron": "^25.3.1",
     "electron-builder": "^23.3.3",
     "eslint": "^8.45.0",
-    "eslint-config-prettier": "^8.6.0",
+    "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-react": "^7.33.0",
     "rewire": "^6.0.0",
     "worker-url": "^1.1.0"
